@@ -1,0 +1,72 @@
+/**
+ * Tasco DLS v1.2 — driver mobile
+ * Source: Test/tasco-dls-v1.2.json
+ */
+:root {
+  --dls-brand: #25a55e;
+  --dls-brand-dark: #1a7a43;
+  --dls-brand-light: #e8f8ee;
+  --dls-on-brand: #ffffff;
+
+  --dls-theme: #ffffff;
+  --dls-theme-variant: #f5f6f7;
+  --dls-surface-raised: #ffffff;
+
+  --dls-primary: #091b37;
+  --dls-secondary: #8f9098;
+  --dls-outline: #c6c8cc;
+  --dls-outline-variant: #e3e4e6;
+  --dls-outline-subtle: #f0f1f2;
+
+  --dls-red: #da2c39;
+  --dls-red-bg: #fff6f9;
+  --dls-red-text: #b4211f;
+  --dls-warning: #ff8c2f;
+  --dls-warning-bg: #fff8f0;
+  --dls-info: #3b82f6;
+  --dls-info-bg: #eff6ff;
+  --dls-green-chip-bg: #f2fef2;
+
+  --dls-overlay: rgba(9, 27, 55, 0.45);
+  --dls-overlay-inverse: rgba(255, 255, 255, 0.2);
+
+  --dls-shadow-sm: 0 1px 2px rgba(9, 27, 55, 0.06);
+  --dls-shadow-md: 0 4px 12px rgba(9, 27, 55, 0.08);
+  --dls-shadow-lg: 0 8px 24px rgba(9, 27, 55, 0.12);
+  --dls-shadow-card: 0 2px 8px rgba(9, 27, 55, 0.06), 0 0 0 1px rgba(9, 27, 55, 0.04);
+
+  --dls-font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --dls-radius-8: 8px;
+  --dls-radius-12: 12px;
+  --dls-radius-16: 16px;
+  --dls-radius-20: 20px;
+  --dls-radius-pill: 1000px;
+
+  --dls-space-4: 4px;
+  --dls-space-6: 6px;
+  --dls-space-8: 8px;
+  --dls-space-12: 12px;
+  --dls-space-16: 16px;
+  --dls-space-20: 20px;
+  --dls-space-24: 24px;
+
+  /* mobileLayout — tasco-dls-v1.2.json */
+  --dls-content-padding: 16px;
+  --dls-form-gap: 16px;
+  --dls-section-gap: 24px;
+
+  --dls-text-xs: 12px;
+  --dls-text-sm: 14px;
+  --dls-text-base: 16px;
+  --dls-text-lg: 20px;
+  --dls-text-xl: 24px;
+
+  --dls-lh-xs: 18px;
+  --dls-lh-sm: 20px;
+  --dls-lh-base: 24px;
+  --dls-lh-lg: 28px;
+
+  --dls-screen-width: 375px;
+  --dls-nav-height: 56px;
+  --dls-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
