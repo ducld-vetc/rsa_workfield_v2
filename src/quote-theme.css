@@ -148,11 +148,162 @@
 
 .quote-inbox-layout__footer {
   flex-shrink: 0;
-  padding: var(--dls-space-16) var(--dls-content-padding) var(--dls-space-16);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: var(--dls-space-12) var(--dls-content-padding);
+  padding-bottom: calc(var(--dls-space-12) + var(--dls-safe-bottom, 0px));
   background: var(--dls-theme);
   border-top: 1px solid var(--dls-outline-subtle);
   border-radius: var(--dls-radius-20) var(--dls-radius-20) 0 0;
   box-shadow: 0 -8px 24px rgba(9, 27, 55, 0.08);
+  transition:
+    padding 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quote-inbox-layout__footer--expanded {
+  gap: var(--dls-space-8);
+  padding: var(--dls-space-16) var(--dls-content-padding);
+  padding-bottom: var(--dls-space-16);
+}
+
+.quote-inbox-footer__meta {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin: 0;
+  transition:
+    grid-template-rows 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.28s ease,
+    margin 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quote-inbox-layout__footer--expanded .quote-inbox-footer__meta {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.quote-inbox-footer__meta-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.quote-inbox-footer__meta-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--dls-space-8);
+  margin-bottom: var(--dls-space-4);
+}
+
+.quote-inbox-footer__meta-head .quote-price-footer__label {
+  margin-bottom: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.quote-inbox-footer__meta-head .quote-price-footer__hint {
+  margin: 0;
+  flex: 0 0 auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.quote-inbox-footer__bar {
+  display: flex;
+  align-items: stretch;
+  gap: var(--dls-space-8);
+  min-width: 0;
+}
+
+.quote-inbox-layout__footer--collapsed .quote-inbox-footer__bar {
+  flex-direction: row;
+}
+
+.quote-inbox-layout__footer--expanded .quote-inbox-footer__bar {
+  flex-direction: column;
+  gap: 0;
+}
+
+.quote-inbox-layout__footer--collapsed .quote-price-footer__input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+.quote-inbox-layout__footer--expanded .quote-price-footer__input {
+  width: 100%;
+}
+
+.quote-inbox-footer__actions {
+  display: flex;
+  align-items: stretch;
+  gap: var(--dls-space-8);
+  min-width: 0;
+  margin: 0;
+  transition:
+    flex 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quote-inbox-layout__footer--collapsed .quote-inbox-footer__actions {
+  flex: 0 0 auto;
+}
+
+.quote-inbox-layout__footer--expanded .quote-inbox-footer__actions {
+  flex: none;
+  width: 100%;
+  margin-top: var(--dls-space-8);
+}
+
+.quote-inbox-layout__footer--collapsed .quote-footer-actions__skip {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0;
+  border-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    flex 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.24s ease,
+    padding 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quote-inbox-layout__footer--expanded .quote-footer-actions__skip {
+  flex: 0 0 auto;
+  width: auto;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quote-inbox-layout__footer--collapsed .quote-footer-actions__submit {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.quote-inbox-layout__footer--collapsed .quote-footer-actions__submit .quote-submit-btn {
+  width: auto;
+  min-width: 96px;
+  padding: 0 var(--dls-space-12);
+  white-space: nowrap;
+}
+
+.quote-inbox-layout__footer--expanded .quote-footer-actions__submit {
+  flex: 1;
+  min-width: 0;
+}
+
+.quote-inbox-layout__footer--expanded .quote-footer-actions__submit .quote-submit-btn {
+  width: 100%;
 }
 
 /* ——— Countdown (inline, above submit) ——— */
@@ -274,21 +425,56 @@
   min-width: 0;
 }
 
-.quote-inbox__head {
-  margin-bottom: 0;
-  padding: var(--dls-space-12);
-  border-radius: var(--dls-radius-12);
-  background: var(--dls-theme);
+.quote-inbox__rescue-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dls-space-12);
+  margin: 0;
 }
 
-.quote-inbox__stops {
+.quote-inbox__rescue-head {
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  gap: var(--dls-space-8);
+}
+
+.quote-inbox__rescue-stops {
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border-top: none;
+}
+
+.quote-inbox__rescue-condition {
+  margin: var(--dls-space-12) 0 0;
+  border-top: 1px solid var(--dls-outline-subtle);
+  padding-top: var(--dls-space-12);
+}
+
+.quote-inbox__rescue-info .order-detail-condition {
   margin-bottom: 0;
+}
+
+.quote-inbox__rescue-info .order-detail-photos {
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border-top: none;
 }
 
 .quote-inbox .order-detail-photos,
 .quote-inbox .order-detail-services,
-.quote-inbox .rescue-sheet__stops {
+.quote-inbox .rescue-sheet__stops:not(.quote-inbox__rescue-stops) {
   background: var(--dls-theme);
+}
+
+.quote-inbox .order-detail-condition {
+  margin: 0;
+  background: var(--dls-warning-bg);
 }
 
 .quote-inbox .rescue-sheet__stop-label,
@@ -300,6 +486,7 @@
 
 .quote-inbox .mission-task-card__description {
   margin-top: var(--dls-space-4);
+  background: var(--dls-theme);
 }
 
 .quote-inbox__stop-meta {
@@ -742,7 +929,7 @@ button.quote-photos-compact__item:active {
 
 /* ——— Sticky price footer ——— */
 .quote-footer-actions {
-  margin-top: var(--dls-space-8);
+  margin-top: 0;
 }
 
 .quote-footer-actions__submit {
@@ -785,7 +972,11 @@ button.quote-photos-compact__item:active {
   letter-spacing: 0.02em;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.1s;
+  transition:
+    transform 0.1s,
+    width 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.34s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .quote-submit-btn:active:not(:disabled) {
@@ -863,6 +1054,9 @@ button.quote-photos-compact__item:active {
   font-weight: 700;
   line-height: var(--dls-lh-lg);
   color: var(--dls-primary);
+  transition:
+    flex 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.34s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .quote-price-footer__input:focus {

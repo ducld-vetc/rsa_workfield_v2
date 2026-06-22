@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Flag, MapPin } from 'lucide-react';
+import { Clock, Flag, MapPin, Wrench } from 'lucide-react';
 import { ConfirmDialog } from './DetailRow';
 import QuoteSubmitButton from './QuoteSubmitButton';
 import RescuePhotosSection from './RescuePhotosSection';
@@ -34,6 +34,31 @@ function formatPlateDisplay(plate: string): string {
   return plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 }
 
+const FOOTER_EXPAND_AT = 32;
+const FOOTER_COLLAPSE_AT = 88;
+
+function syncFooterExpanded(
+  scrollEl: HTMLElement,
+  expandedRef: React.MutableRefObject<boolean>,
+  setFooterExpanded: React.Dispatch<React.SetStateAction<boolean>>,
+) {
+  const distanceFromBottom =
+    scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+
+  if (expandedRef.current) {
+    if (distanceFromBottom > FOOTER_COLLAPSE_AT) {
+      expandedRef.current = false;
+      setFooterExpanded(false);
+    }
+    return;
+  }
+
+  if (distanceFromBottom <= FOOTER_EXPAND_AT) {
+    expandedRef.current = true;
+    setFooterExpanded(true);
+  }
+}
+
 const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
   order,
   queueRemaining,
@@ -58,6 +83,10 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
   const [countdownSeconds, setCountdownSeconds] = React.useState(
     order.quoteCountdownSeconds ?? 0,
   );
+  const [footerExpanded, setFooterExpanded] = React.useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const scrollRafRef = React.useRef<number | null>(null);
+  const footerExpandedRef = React.useRef(false);
 
   const selectedDriver = MOCK_QUOTE_DRIVERS.find((d) => d.id === driverId);
   const selectedVehicle = MOCK_RESCUE_VEHICLES.find((v) => v.id === vehicleId);
@@ -72,7 +101,40 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
     setExpired(false);
     setExtended(false);
     setCountdownSeconds(order.quoteCountdownSeconds ?? 0);
+    footerExpandedRef.current = false;
+    setFooterExpanded(false);
   }, [order.id, order.quoteCountdownSeconds, order]);
+
+  React.useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return undefined;
+
+    const syncFooter = () => {
+      syncFooterExpanded(scrollEl, footerExpandedRef, setFooterExpanded);
+    };
+
+    const onScroll = () => {
+      if (scrollRafRef.current != null) return;
+      scrollRafRef.current = window.requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        syncFooter();
+      });
+    };
+
+    syncFooter();
+    scrollEl.addEventListener('scroll', onScroll, { passive: true });
+
+    const resizeObserver = new ResizeObserver(syncFooter);
+    resizeObserver.observe(scrollEl);
+
+    return () => {
+      scrollEl.removeEventListener('scroll', onScroll);
+      resizeObserver.disconnect();
+      if (scrollRafRef.current != null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, [order.id]);
 
   const canSubmit =
     parseVndInput(price) > 0 &&
@@ -108,7 +170,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
 
   return (
     <div className="quote-inbox-layout">
-      <div className="quote-inbox-layout__scroll">
+      <div className="quote-inbox-layout__scroll" ref={scrollRef}>
         <div className="quote-inbox">
           {queueRemaining > 0 && (
             <p className="quote-inbox__queue-hint">
@@ -116,65 +178,75 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
             </p>
           )}
 
-          <div className="rescue-sheet__head quote-inbox__head">
-            <div className="rescue-sheet__identity">
-              <h2 className="rescue-sheet__plate">{formatPlateDisplay(order.plate)}</h2>
-              <p className="rescue-sheet__vehicle">
-                {order.brand} {order.model}
-              </p>
-            </div>
-            <div className="rescue-sheet__head-aside">
-              <DlsStatusBadge label={modeLabel} variant="success" showDot={false} />
-            </div>
-          </div>
-
-          <ul className="rescue-sheet__stops quote-inbox__stops">
-            <li className="rescue-sheet__stop">
-              <span className="rescue-sheet__stop-icon rescue-sheet__stop-icon--pickup" aria-hidden>
-                <MapPin size={15} strokeWidth={2.25} />
-              </span>
-              <div className="rescue-sheet__stop-body">
-                <div className="mission-task-card__stop-head">
-                  <span className="rescue-sheet__stop-label">Điểm cứu hộ</span>
-                  <span className="mission-task-card__distance">{order.distanceKm} km</span>
-                </div>
-                <AddressMapLink address={order.address} />
+          <section className="order-detail-services quote-inbox__rescue-info" aria-label="Thông tin cứu hộ">
+            <div className="rescue-sheet__head quote-inbox__rescue-head">
+              <div className="rescue-sheet__identity">
+                <h2 className="rescue-sheet__plate">{formatPlateDisplay(order.plate)}</h2>
+                <p className="rescue-sheet__vehicle">
+                  {order.brand} {order.model}
+                </p>
               </div>
-            </li>
+              <div className="rescue-sheet__head-aside">
+                <DlsStatusBadge label={modeLabel} variant="success" showDot={false} />
+              </div>
+            </div>
 
-            {isTow && order.towDestination && (
+            <ul className="rescue-sheet__stops quote-inbox__rescue-stops">
               <li className="rescue-sheet__stop">
-                <span className="rescue-sheet__stop-icon rescue-sheet__stop-icon--tow" aria-hidden>
-                  <Flag size={14} strokeWidth={2.25} />
+                <span className="rescue-sheet__stop-icon rescue-sheet__stop-icon--pickup" aria-hidden>
+                  <MapPin size={15} strokeWidth={2.25} />
                 </span>
                 <div className="rescue-sheet__stop-body">
                   <div className="mission-task-card__stop-head">
-                    <span className="rescue-sheet__stop-label">Kéo đến</span>
-                    {order.towKm != null && (
-                      <span className="mission-task-card__distance mission-task-card__distance--tow">
-                        {order.towKm} km
-                      </span>
-                    )}
+                    <span className="rescue-sheet__stop-label">Điểm cứu hộ</span>
+                    <span className="mission-task-card__distance">{order.distanceKm} km</span>
                   </div>
-                  <AddressMapLink address={order.towDestination} />
+                  <AddressMapLink address={order.address} />
                 </div>
               </li>
+
+              {isTow && order.towDestination && (
+                <li className="rescue-sheet__stop">
+                  <span className="rescue-sheet__stop-icon rescue-sheet__stop-icon--tow" aria-hidden>
+                    <Flag size={14} strokeWidth={2.25} />
+                  </span>
+                  <div className="rescue-sheet__stop-body">
+                    <div className="mission-task-card__stop-head">
+                      <span className="rescue-sheet__stop-label">Kéo đến</span>
+                      {order.towKm != null && (
+                        <span className="mission-task-card__distance mission-task-card__distance--tow">
+                          {order.towKm} km
+                        </span>
+                      )}
+                    </div>
+                    <AddressMapLink address={order.towDestination} />
+                  </div>
+                </li>
+              )}
+            </ul>
+
+            {(order.condition || order.conditionDescription) && (
+              <div className="order-detail-condition quote-inbox__rescue-condition">
+                {order.condition && (
+                  <p className="order-detail-condition__title">
+                    <Wrench size={14} strokeWidth={2.25} aria-hidden />
+                    {order.condition}
+                  </p>
+                )}
+                {order.conditionDescription && (
+                  <p className="order-detail-condition__desc">{order.conditionDescription}</p>
+                )}
+              </div>
             )}
-          </ul>
 
-          {order.condition && (
-            <section className="mission-task-card__description" aria-label="Mô tả sự cố">
-              <p>{order.condition}</p>
-            </section>
-          )}
-
-          {photos.length > 0 && (
-            <RescuePhotosSection
-              photos={{ 'hien-truong': photos }}
-              title="Hình ảnh sự cố"
-              compact
-            />
-          )}
+            {photos.length > 0 && (
+              <RescuePhotosSection
+                photos={{ 'hien-truong': photos }}
+                title="Hình ảnh sự cố"
+                compact
+              />
+            )}
+          </section>
 
           <section className="order-detail-services quote-inbox__form" aria-label="Thông tin báo giá">
             <p className="order-detail-services__title">Thông tin báo giá</p>
@@ -233,11 +305,23 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
         </div>
       </div>
 
-      <div className="quote-inbox-layout__footer">
-        <div className="quote-price-footer__field">
-          <label className="quote-price-footer__label" htmlFor="quote-price-input">
-            Giá báo (VNĐ)<span className="dls-required">*</span>
-          </label>
+      <div
+        className={`quote-inbox-layout__footer${footerExpanded ? ' quote-inbox-layout__footer--expanded' : ' quote-inbox-layout__footer--collapsed'}`}
+      >
+        <div className="quote-inbox-footer__meta">
+          <div className="quote-inbox-footer__meta-inner">
+            <div className="quote-inbox-footer__meta-head">
+              <label className="quote-price-footer__label" htmlFor="quote-price-input">
+                Giá báo (VNĐ)<span className="dls-required">*</span>
+              </label>
+              <p className="quote-price-footer__hint">
+                Giá gợi ý: {suggestedPrice.toLocaleString('vi-VN')} đ
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="quote-inbox-footer__bar">
           <input
             id="quote-price-input"
             className="quote-price-footer__input"
@@ -245,30 +329,31 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
             value={price}
             onChange={(e) => handlePriceChange(e.target.value)}
             placeholder="0"
+            aria-label="Giá báo VNĐ"
           />
-          <p className="quote-price-footer__hint">
-            Giá gợi ý: {suggestedPrice.toLocaleString('vi-VN')} đ
-          </p>
-        </div>
 
-        <div className="rescue-sheet__actions-row quote-footer-actions">
-          <button
-            type="button"
-            className="rescue-sheet__action-btn rescue-sheet__action-btn--ghost quote-footer-actions__skip"
-            onClick={() => setSkipConfirm(true)}
-          >
-            Bỏ qua
-          </button>
-          <div className="quote-footer-actions__submit">
-            <QuoteSubmitButton
-              key={`${order.id}-${countdownSeconds}-${extended}`}
-              initialSeconds={showCountdown ? countdownSeconds : 0}
-              disabled={!canSubmit}
-              onClick={handleSubmit}
-              onExpire={() => setExpired(true)}
-              canExtend={!extended}
-              onExtend={handleExtend}
-            />
+          <div className="quote-inbox-footer__actions rescue-sheet__actions-row quote-footer-actions">
+            <button
+              type="button"
+              className="rescue-sheet__action-btn rescue-sheet__action-btn--ghost quote-footer-actions__skip"
+              onClick={() => setSkipConfirm(true)}
+              tabIndex={footerExpanded ? 0 : -1}
+              aria-hidden={!footerExpanded}
+            >
+              Bỏ qua
+            </button>
+            <div className="quote-footer-actions__submit">
+              <QuoteSubmitButton
+                key={`${order.id}-${countdownSeconds}-${extended}`}
+                initialSeconds={showCountdown ? countdownSeconds : 0}
+                disabled={!canSubmit}
+                onClick={handleSubmit}
+                onExpire={() => setExpired(true)}
+                canExtend={!extended}
+                onExtend={handleExtend}
+                label={footerExpanded ? 'Gửi báo giá' : 'Báo giá'}
+              />
+            </div>
           </div>
         </div>
       </div>

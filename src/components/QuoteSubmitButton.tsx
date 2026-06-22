@@ -8,6 +8,7 @@ interface QuoteSubmitButtonProps {
   onExpire?: () => void;
   onExtend?: () => void;
   canExtend?: boolean;
+  label?: string;
 }
 
 const QuoteSubmitButton: React.FC<QuoteSubmitButtonProps> = ({
@@ -17,9 +18,10 @@ const QuoteSubmitButton: React.FC<QuoteSubmitButtonProps> = ({
   onExpire,
   onExtend,
   canExtend = false,
+  label = 'Gửi báo giá',
 }) => (
   <ProgressCountdownButton
-    label="Gửi báo giá"
+    label={label}
     initialSeconds={initialSeconds}
     disabled={disabled}
     onClick={onClick}
