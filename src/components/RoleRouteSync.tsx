@@ -16,7 +16,15 @@ const ALLOWED: Record<DriverRole, string[]> = {
   'rescue-only': ['/home', '/activity', '/settings', '/orders', '/jobs', '/change-password', '/extra-costs', '/payment-wait', '/payment-success', '/notifications'],
 };
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/otp', '/new-password', '/account-locked'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/sign-in',
+  '/forgot-password',
+  '/otp',
+  '/new-password',
+  '/account-locked',
+  '/register-quick-service',
+];
 
 export const RoleRouteSync: React.FC = () => {
   const { driverRole } = useApp();

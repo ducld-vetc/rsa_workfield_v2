@@ -330,50 +330,58 @@
   justify-content: center;
 }
 
+/* ——— Top nav — Native app (Grab-style flat) ——— */
 .dls-topnav {
   display: flex;
   align-items: center;
-  gap: var(--dls-space-12);
-  height: 56px;
-  padding: 0 var(--dls-space-12);
-  background: var(--dls-theme);
-  border-bottom: 1px solid var(--dls-outline-variant);
+  gap: var(--dls-space-8);
+  min-height: 48px;
+  height: 48px;
+  padding: 4px 8px;
+  background: transparent;
+  border-bottom: none;
+  flex-shrink: 0;
 }
 
 .dls-topnav--brand {
-  background: var(--dls-brand);
+  background: transparent;
   border-bottom: none;
 }
 
 .dls-topnav--brand .dls-topnav-title {
-  color: var(--dls-on-brand);
+  color: var(--dls-primary);
 }
 
 .dls-topnav-back {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--dls-radius-pill);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: var(--dls-overlay-inverse);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: var(--dls-primary);
+  cursor: pointer;
   flex-shrink: 0;
+  padding: 0;
+}
+
+.dls-topnav-back:active {
+  background: var(--dls-theme-variant);
 }
 
 .dls-topnav-spacer {
-  width: 32px;
+  width: 40px;
   flex-shrink: 0;
 }
 
 .dls-topnav-title {
   flex: 1;
   margin: 0;
-  font-size: var(--dls-text-lg);
+  font-size: var(--dls-text-base);
   font-weight: 700;
-  line-height: var(--dls-lh-lg);
+  line-height: var(--dls-lh-base);
   text-align: center;
   color: var(--dls-primary);
   overflow: hidden;
@@ -385,10 +393,16 @@
   text-align: left;
 }
 
+.dls-topnav-title--empty {
+  visibility: hidden;
+}
+
 .dls-topnav-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--dls-space-8);
+  min-width: 40px;
   flex-shrink: 0;
 }
 

@@ -5,15 +5,8 @@ import {
   DlsCheckbox,
   DlsHomeIndicator,
   DlsTextField,
+  DlsTopNav,
 } from '@dls/components';
-
-const VetcLogo = () => (
-  <svg viewBox="0 0 120 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden className="grab-login-logo">
-    <text x="0" y="38" fill="#25a55e" fontFamily="'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif" fontWeight="800" fontSize="40" fontStyle="italic">
-      VETC
-    </text>
-  </svg>
-);
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -34,14 +27,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="dm-screen grab-login">
-      <div className="grab-login__top">
-        <VetcLogo />
-        <h1>Workfield Driver</h1>
-        <p>Đăng nhập để bắt đầu nhận đơn cứu hộ</p>
-      </div>
-
-      <div className="grab-login__form">
+    <div className="dm-screen grab-signin">
+      <DlsTopNav title="Đăng nhập" onBack={() => navigate('/login')} />
+      <div className="dls-auth-body grab-signin__body">
+        <p className="dls-auth-hint">
+          Đăng nhập tài khoản tài xế / trạm đối tác VETC Cứu hộ.
+        </p>
         <DlsTextField
           label="Tên đăng nhập"
           value={username}
@@ -57,25 +48,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           placeholder="Nhập mật khẩu"
           required
         />
-        <div className="grab-login__row">
-          <div className="grab-login__remember">
-            <DlsCheckbox checked={remember} onChange={setRemember} label="Lưu mật khẩu" />
-          </div>
+        <div className="grab-signin__row">
+          <DlsCheckbox checked={remember} onChange={setRemember} label="Lưu mật khẩu" />
           <button
             type="button"
-            className="dls-link-btn grab-login__forgot"
+            className="dls-link-btn"
             onClick={() => navigate('/forgot-password')}
           >
             Quên mật khẩu?
           </button>
         </div>
-      </div>
-
-      <div className="grab-login__footer">
         <DlsBrandButton onClick={handleLogin} disabled={!username || !password}>
           Đăng nhập
         </DlsBrandButton>
-        <p className="grab-login__version">v1.0.0</p>
+        <button
+          type="button"
+          className="dls-link-btn grab-signin__register"
+          onClick={() => navigate('/register-quick-service')}
+        >
+          Chưa có tài khoản? Đăng ký ngay
+        </button>
       </div>
       <DlsHomeIndicator />
     </div>

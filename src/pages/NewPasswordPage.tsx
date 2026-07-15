@@ -102,8 +102,8 @@ const NewPasswordPage: React.FC = () => {
         message="Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại."
         confirmLabel="Đăng nhập"
         cancelLabel=""
-        onConfirm={() => navigate('/login')}
-        onCancel={() => navigate('/login')}
+        onConfirm={() => navigate('/sign-in')}
+        onCancel={() => navigate('/sign-in')}
       />
       <DlsHomeIndicator />
     </div>

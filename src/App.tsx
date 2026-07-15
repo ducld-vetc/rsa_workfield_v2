@@ -27,7 +27,9 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentWaitPage from './pages/PaymentWaitPage';
 import QuoteFormPage from './pages/QuoteFormPage';
 import QuoteListPage from './pages/QuoteListPage';
+import RegisterQuickServicePage from './pages/RegisterQuickServicePage';
 import SettingsPage from './pages/SettingsPage';
+import WelcomePage from './pages/WelcomePage';
 import { FilterState } from './types';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,7 +38,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const LoginRedirect: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
+const SignInRedirect: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
   const { driverRole } = useApp();
   const navigate = useNavigate();
 
@@ -68,11 +70,15 @@ const AppRoutes: React.FC = () => {
       <Routes>
         <Route
           path="/login"
+          element={isLoggedIn ? <RoleHomeRedirect /> : <WelcomePage />}
+        />
+        <Route
+          path="/sign-in"
           element={
             isLoggedIn ? (
               <RoleHomeRedirect />
             ) : (
-              <LoginRedirect onLogin={handleLogin} />
+              <SignInRedirect onLogin={handleLogin} />
             )
           }
         />
@@ -80,6 +86,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/new-password" element={<NewPasswordPage />} />
         <Route path="/account-locked" element={<AccountLockedPage />} />
+        <Route path="/register-quick-service" element={<RegisterQuickServicePage />} />
         <Route
           path="/home"
           element={

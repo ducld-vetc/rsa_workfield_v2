@@ -90,7 +90,7 @@ export const DlsNeutralButton: React.FC<{
 export const DlsCheckbox: React.FC<{
   checked: boolean;
   onChange: (v: boolean) => void;
-  label: string;
+  label: React.ReactNode;
 }> = ({ checked, onChange, label }) => (
   <label className="dls-checkbox-row">
     <button
@@ -102,7 +102,7 @@ export const DlsCheckbox: React.FC<{
     >
       {checked && <Check size={14} strokeWidth={3} />}
     </button>
-    <span>{label}</span>
+    <span className="dls-checkbox-label">{label}</span>
   </label>
 );
 
@@ -148,23 +148,39 @@ export const DlsChip: React.FC<{
   </button>
 );
 
-/* ——— Top nav — Native app ——— */
+/* ——— Top nav — Native app (Grab-style flat) ——— */
 export const DlsTopNav: React.FC<{
-  title: string;
+  title?: string;
   variant?: 'brand' | 'default';
   titleAlign?: 'center' | 'start';
   onBack?: () => void;
+  backIcon?: 'back' | 'close';
   actions?: React.ReactNode;
-}> = ({ title, variant = 'brand', titleAlign = 'center', onBack, actions }) => (
+}> = ({ title = '', variant = 'brand', titleAlign = 'center', onBack, backIcon = 'back', actions }) => (
   <header className={`dls-topnav ${variant === 'brand' ? 'dls-topnav--brand' : ''}`}>
     {onBack ? (
-      <button type="button" className="dls-topnav-back" onClick={onBack} aria-label="Quay lại">
-        <ChevronLeft size={20} />
+      <button
+        type="button"
+        className="dls-topnav-back"
+        onClick={onBack}
+        aria-label={backIcon === 'close' ? 'Đóng' : 'Quay lại'}
+      >
+        {backIcon === 'close' ? <X size={22} strokeWidth={2} /> : <ChevronLeft size={24} strokeWidth={2} />}
       </button>
     ) : (
       <div className="dls-topnav-spacer" />
     )}
-    <h1 className={`dls-topnav-title ${titleAlign === 'start' ? 'dls-topnav-title--start' : ''}`}>{title}</h1>
+    <h1
+      className={[
+        'dls-topnav-title',
+        titleAlign === 'start' ? 'dls-topnav-title--start' : '',
+        !title ? 'dls-topnav-title--empty' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {title || '\u00a0'}
+    </h1>
     <div className="dls-topnav-actions">{actions ?? <div className="dls-topnav-spacer" />}</div>
   </header>
 );

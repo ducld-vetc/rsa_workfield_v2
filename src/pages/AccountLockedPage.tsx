@@ -29,7 +29,7 @@ const AccountLockedPage: React.FC = () => {
         </div>
         <h2 className="dls-auth-title">Tài khoản bị khoá</h2>
         <p className="dls-auth-hint">{message}</p>
-        <DlsBrandButton onClick={() => navigate('/login')}>Quay lại đăng nhập</DlsBrandButton>
+        <DlsBrandButton onClick={() => navigate('/sign-in')}>Quay lại đăng nhập</DlsBrandButton>
       </div>
       <DlsHomeIndicator />
     </div>

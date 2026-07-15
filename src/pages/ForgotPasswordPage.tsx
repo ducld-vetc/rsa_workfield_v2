@@ -31,7 +31,7 @@ const ForgotPasswordPage: React.FC = () => {
 
   return (
     <div className="dm-screen">
-      <DlsTopNav title="Quên mật khẩu" onBack={() => navigate('/login')} />
+      <DlsTopNav title="Quên mật khẩu" onBack={() => navigate('/sign-in')} />
       <div className="dls-auth-body">
         <p className="dls-auth-hint">Nhập số điện thoại đăng ký để nhận mã OTP.</p>
         <DlsTextField
