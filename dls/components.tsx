@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Eye, EyeOff, X, Check, Filter, Bell, Settings, Lock, LogOut, ChevronRight, Navigation, Clock } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, X, Check, Filter, Bell, Settings, Lock, LogOut, ChevronRight, ChevronDown, Navigation, Clock, Search } from 'lucide-react';
 
 /* ——— Typography helpers ——— */
 export const DlsLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
@@ -45,6 +45,110 @@ export const DlsTextField: React.FC<{
       </div>
       {error && <p className="dls-field-error" role="alert">{error}</p>}
     </div>
+  );
+};
+
+/* ——— Search field (DLS Search field) ——— */
+export const DlsSearchField: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  onSubmit?: () => void;
+  ariaLabel?: string;
+}> = ({ value, onChange, placeholder = 'Tìm kiếm...', onSubmit, ariaLabel = 'Tìm kiếm' }) => (
+  <div className="dls-search-field">
+    <input
+      className="dls-search-field__input"
+      type="search"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onSubmit?.();
+      }}
+    />
+    <button
+      type="button"
+      className="dls-search-field__btn"
+      onClick={() => onSubmit?.()}
+      aria-label="Tìm kiếm"
+    >
+      <Search size={18} strokeWidth={2.25} />
+    </button>
+  </div>
+);
+
+/* ——— Select field (DLS picker sheet — không dùng native <select>) ——— */
+export const DlsSelectField: React.FC<{
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  sheetTitle?: string;
+}> = ({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = 'Chọn',
+  required,
+  sheetTitle,
+}) => {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <>
+      <div className="dls-field">
+        <DlsLabel required={required}>{label}</DlsLabel>
+        <button
+          type="button"
+          className={`dls-select-trigger${value ? '' : ' dls-select-trigger--placeholder'}`}
+          onClick={() => setOpen(true)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <span>{value || placeholder}</span>
+          <ChevronDown size={18} strokeWidth={2} aria-hidden />
+        </button>
+      </div>
+
+      {open && (
+        <div
+          className="dls-sheet-overlay"
+          role="dialog"
+          aria-modal
+          aria-label={sheetTitle || label}
+          onClick={() => setOpen(false)}
+        >
+          <div className="dls-sheet" onClick={(event) => event.stopPropagation()}>
+            <DlsSheetHeader title={sheetTitle || label} onClose={() => setOpen(false)} />
+            <div className="dls-sheet-body dls-sheet-body--form">
+              <div className="dls-reason-list" role="listbox" aria-label={label}>
+                {options.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="option"
+                    aria-selected={value === option}
+                    className={`dls-reason-item${value === option ? ' dls-reason-item--on' : ''}`}
+                    onClick={() => {
+                      onChange(option);
+                      setOpen(false);
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <DlsHomeIndicator />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

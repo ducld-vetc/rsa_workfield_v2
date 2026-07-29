@@ -1,11 +1,16 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { MOCK_QUOTE_DRIVERS } from '../data/mockQuoteResources';
 import { DRIVER_ROLE_LABELS, DriverRole } from '../types';
+import { resetOnboardingDone } from '../utils/onboarding';
 
 const ROLES: DriverRole[] = ['quote-rescue', 'quote-only', 'rescue-only'];
 
 const DemoControls: React.FC = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const {
     driverRole,
     setDriverRole,
@@ -67,6 +72,22 @@ const DemoControls: React.FC = () => {
             onClick={() => setDemoHasOrders(true)}
           >
             Có đơn
+          </button>
+        </div>
+      </div>
+
+      <div className="dm-demo-panel__block">
+        <span className="dm-demo-panel__label">Onboarding</span>
+        <div className="dm-demo-panel__toggle">
+          <button
+            type="button"
+            className="dm-demo-panel__pill"
+            onClick={() => {
+              resetOnboardingDone();
+              if (isLoggedIn) navigate('/onboarding?replay=1');
+            }}
+          >
+            Xem / reset hướng dẫn
           </button>
         </div>
       </div>

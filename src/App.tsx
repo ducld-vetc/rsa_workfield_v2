@@ -27,10 +27,14 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentWaitPage from './pages/PaymentWaitPage';
 import QuoteFormPage from './pages/QuoteFormPage';
 import QuoteListPage from './pages/QuoteListPage';
+import OnboardingPage from './pages/OnboardingPage';
 import RegisterQuickServicePage from './pages/RegisterQuickServicePage';
 import SettingsPage from './pages/SettingsPage';
+import StaffDetailPage from './pages/StaffDetailPage';
+import StaffManagementPage from './pages/StaffManagementPage';
 import WelcomePage from './pages/WelcomePage';
 import { FilterState } from './types';
+import { isOnboardingDone } from './utils/onboarding';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoggedIn } = useAuth();
@@ -38,14 +42,20 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-const SignInRedirect: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
+const SignInRedirect: React.FC<{
+  onLogin: (options?: { askLocation?: boolean }) => void;
+}> = ({ onLogin }) => {
   const { driverRole } = useApp();
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    onLogin();
-    const dest =
-      driverRole === 'quote-only' ? '/quotes' : '/home';
+    const needGuide = !isOnboardingDone();
+    onLogin({ askLocation: !needGuide });
+    const dest = needGuide
+      ? '/onboarding'
+      : driverRole === 'quote-only'
+        ? '/quotes'
+        : '/home';
     navigate(dest);
   };
 
@@ -59,8 +69,14 @@ const AppRoutes: React.FC = () => {
   const [filterDraft, setFilterDraft] = React.useState<FilterState>(emptyFilter);
   const [locationPrompt, setLocationPrompt] = React.useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = (options?: { askLocation?: boolean }) => {
     login();
+    if (options?.askLocation !== false) {
+      setLocationPrompt(true);
+    }
+  };
+
+  const finishOnboarding = () => {
     setLocationPrompt(true);
   };
 
@@ -87,6 +103,14 @@ const AppRoutes: React.FC = () => {
         <Route path="/new-password" element={<NewPasswordPage />} />
         <Route path="/account-locked" element={<AccountLockedPage />} />
         <Route path="/register-quick-service" element={<RegisterQuickServicePage />} />
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <OnboardingPage onFinished={finishOnboarding} />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/home"
           element={
@@ -153,6 +177,22 @@ const AppRoutes: React.FC = () => {
                   logout();
                 }}
               />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/staff"
+          element={
+            <ProtectedRoute>
+              <StaffManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/staff/:id"
+          element={
+            <ProtectedRoute>
+              <StaffDetailPage />
             </ProtectedRoute>
           }
         />
