@@ -1,6 +1,14 @@
 export type DriverRole = 'quote-rescue' | 'quote-only' | 'rescue-only';
 
-export type QuoteStatus = 'cho-bao-gia' | 'da-bao-gia' | 'tu-choi';
+export type QuoteStatus =
+  | 'cho-bao-gia'
+  | 'da-bao-gia'
+  | 'tu-choi'
+  | 'het-han'
+  | 'da-huy'
+  | 'rejected'
+  | 'da-chap-nhan'
+  | 'da-phan-cong';
 
 export type QuoteChipFilter = 'tat-ca' | QuoteStatus;
 
@@ -48,7 +56,33 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   'cho-bao-gia': 'Chờ báo giá',
   'da-bao-gia': 'Đã báo giá',
   'tu-choi': 'Từ chối',
+  'het-han': 'Hết hạn',
+  'da-huy': 'Đã hủy',
+  rejected: 'Bị từ chối',
+  'da-chap-nhan': 'Đã chấp nhận',
+  'da-phan-cong': 'Đã phân công',
 };
+
+/** Trạng thái hiện trên tab Báo giá. TIMEOUT, CANCELLED, REJECTED, ACCEPTED, ASSIGNED. */
+export const QUOTE_MANAGE_STATUSES: QuoteStatus[] = [
+  'da-bao-gia',
+  'tu-choi',
+  'het-han',
+  'da-huy',
+  'rejected',
+  'da-chap-nhan',
+  'da-phan-cong',
+];
+
+export const QUOTE_FILTER_STATUSES: QuoteStatus[] = [
+  'het-han',
+  'da-huy',
+  'rejected',
+  'da-chap-nhan',
+  'da-phan-cong',
+  'da-bao-gia',
+  'tu-choi',
+];
 
 export const QUOTE_CHIP_FILTERS: { id: QuoteChipFilter; label: string }[] = [
   { id: 'tat-ca', label: 'Tất cả' },
@@ -64,6 +98,35 @@ export const SERVICE_MODE_LABELS: Record<QuoteOrder['serviceMode'], string> = {
 export const isTowQuote = (order: QuoteOrder) => order.serviceMode === 'Cẩu kéo';
 
 export type RescueServiceMode = QuoteOrder['serviceMode'];
+
+/** Nhóm đơn trên Quản lý đơn. */
+export type OrderLine = 'cuu-ho' | 'van-tai';
+
+/** Nguồn đơn cứu hộ. Đơn vận tải không dùng trường này. */
+export type RescueChannel = 'vetc' | 'noi-bo';
+
+export const ORDER_LINE_LABELS: Record<OrderLine, string> = {
+  'cuu-ho': 'Cứu hộ',
+  'van-tai': 'Vận tải',
+};
+
+export const RESCUE_CHANNEL_LABELS: Record<RescueChannel, string> = {
+  vetc: 'VETC',
+  'noi-bo': 'Nội bộ',
+};
+
+const TRANSPORT_SERVICE = /chở xe|chở cây|vận tải/i;
+
+export function orderLineOf(order: Pick<RescueOrder, 'orderLine' | 'services' | 'serviceLines'>): OrderLine {
+  if (order.orderLine) return order.orderLine;
+  const names = [order.services, ...(order.serviceLines?.map((line) => line.name) ?? [])].join(' ');
+  return TRANSPORT_SERVICE.test(names) ? 'van-tai' : 'cuu-ho';
+}
+
+export function rescueChannelOf(order: Pick<RescueOrder, 'rescueChannel' | 'quoteOrderId'>): RescueChannel {
+  if (order.rescueChannel) return order.rescueChannel;
+  return order.quoteOrderId ? 'vetc' : 'noi-bo';
+}
 
 export const isTowRescueOrder = (order: RescueOrder) =>
   Boolean(order.towDestination) || /kéo|cẩu/i.test(order.services);
@@ -143,6 +206,8 @@ export interface FieldOrderInput {
   estimatedTotal?: number;
   pickupCoords?: GeoPoint;
   towCoords?: GeoPoint;
+  /** Cứu hộ hoặc vận tải. Đơn tạo tại trạm là nội bộ. */
+  orderLine?: OrderLine;
 }
 
 export interface RescueOrder {
@@ -174,6 +239,10 @@ export interface RescueOrder {
   priceConfirmed?: boolean;
   /** Liên kết đơn báo giá gốc */
   quoteOrderId?: string;
+  /** Cứu hộ hoặc vận tải */
+  orderLine?: OrderLine;
+  /** VETC hoặc nội bộ. Chỉ đơn cứu hộ. */
+  rescueChannel?: RescueChannel;
   /** SLA mềm — phản hồi trước thời điểm này */
   respondBy?: string;
   /** Đã phân công cho tài xế khác (không tự nhận) */
@@ -243,7 +312,7 @@ export interface FilterState {
   toDate: string;
   plate: string;
   serviceTypes: string[];
-  statuses: OrderStatus[];
+  statuses: string[];
 }
 
 export interface NotificationItem {

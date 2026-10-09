@@ -17,17 +17,28 @@ import { ConfirmDialog } from '../components/DetailRow';
 import { useApp } from '../context/AppContext';
 import { MOCK_QUOTE_DRIVERS, MOCK_RESCUE_VEHICLES } from '../data/mockQuoteResources';
 import { GeoPoint, RescueServiceMode } from '../types';
+import { EMPTY_MAP_CENTER } from '../utils/orderMap';
 
 const MAX_PHOTOS = 6;
 
-const SERVICE_GROUPS = [
+const SERVICE_KINDS = ['Vận tải', 'Cứu hộ'] as const;
+type ServiceKind = (typeof SERVICE_KINDS)[number];
+
+const TRANSPORT_GROUPS = [
+  {
+    name: 'Vận tải',
+    items: ['Chở xe mới', 'Chở cây cối'],
+  },
+] as const;
+
+const RESCUE_GROUPS = [
   {
     name: 'Cẩu xe',
-    items: ['Cẩu xe mặt đường', 'Cẩu xe dưới mặt đường', 'Cẩu xe taluy/mương', 'Cẩu xe từ tầng hầm'],
+    items: ['Cẩu xe'],
   },
   {
     name: 'Kéo xe',
-    items: ['Kéo xe về gara', 'Kéo xe đường dài', 'Kéo xe bằng sàn trượt', 'Kéo xe không giới hạn khoảng cách'],
+    items: ['Kéo xe'],
   },
   {
     name: 'Hỗ trợ tại chỗ',
@@ -42,7 +53,28 @@ const SERVICE_GROUPS = [
   },
 ] as const;
 
-const TOW_GROUPS = new Set(['Cẩu xe', 'Kéo xe']);
+const SERVICE_GROUPS_BY_KIND: Record<ServiceKind, readonly { name: string; items: readonly string[] }[]> = {
+  'Vận tải': TRANSPORT_GROUPS,
+  'Cứu hộ': RESCUE_GROUPS,
+};
+
+const TOW_SERVICES = new Set(['Cẩu xe', 'Kéo xe']);
+
+const CUSTOMER_TYPES = ['Cá nhân', 'Doanh nghiệp'] as const;
+type CustomerType = (typeof CUSTOMER_TYPES)[number];
+
+const DEMO_COMPANIES = [
+  'Công ty TNHH Vận tải Hoàng Long',
+  'Công ty CP Ô tô Thành Công',
+  'Công ty TNHH Logistics Miền Bắc',
+  'Doanh nghiệp tư nhân Minh Phát',
+  'Công ty TNHH Xe khách Phương Trang',
+  'Công ty CP Vận tải biển Việt Nam',
+  'Công ty TNHH Thương mại An Bình',
+  'Công ty CP Đầu tư Xây dựng Delta',
+  'Công ty TNHH Dịch vụ Cơ khí Hà Nội',
+  'Công ty CP Nông sản Xanh',
+];
 
 const DRIVER_OPTIONS = MOCK_QUOTE_DRIVERS.map((driver) => driver.name);
 const VEHICLE_OPTIONS = MOCK_RESCUE_VEHICLES.map((vehicle) => `${vehicle.plate} · ${vehicle.type}`);
@@ -51,6 +83,26 @@ interface MediaItem {
   id: string;
   url: string;
   kind: 'image' | 'video';
+}
+
+function normalizePlate(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function distanceKm(from: GeoPoint, to: GeoPoint): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(to.lat - from.lat);
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function formatDistanceKm(km: number): string {
+  const rounded = km < 10 ? Math.round(km * 10) / 10 : Math.round(km);
+  return `${rounded.toLocaleString('vi-VN')} km`;
 }
 
 function formatMoneyInput(digits: string): string {
@@ -84,8 +136,11 @@ const CreateRescueOrderPage: React.FC = () => {
   const { createFieldOrder, driverRole, currentDriverName } = useApp();
   const photosRef = React.useRef<MediaItem[]>([]);
   const submittedRef = React.useRef(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const fieldRefs = React.useRef<Partial<Record<string, HTMLElement>>>({});
 
   const [plate, setPlate] = React.useState('');
+  const [customerType, setCustomerType] = React.useState<CustomerType>('Cá nhân');
   const [ownerName, setOwnerName] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [address, setAddress] = React.useState('');
@@ -94,6 +149,7 @@ const CreateRescueOrderPage: React.FC = () => {
   const [picker, setPicker] = React.useState<'incident' | 'tow' | null>(null);
   const [draftPoint, setDraftPoint] = React.useState<GeoPoint | null>(null);
   const [resolving, setResolving] = React.useState(false);
+  const [serviceKind, setServiceKind] = React.useState<ServiceKind>('Cứu hộ');
   const [services, setServices] = React.useState<string[]>([]);
   const [serviceOpen, setServiceOpen] = React.useState(false);
   const [condition, setCondition] = React.useState('');
@@ -106,6 +162,7 @@ const CreateRescueOrderPage: React.FC = () => {
   const [amountDigits, setAmountDigits] = React.useState('');
   const [created, setCreated] = React.useState<{ started: boolean } | null>(null);
 
+  const [plateError, setPlateError] = React.useState<string | undefined>();
   const [phoneError, setPhoneError] = React.useState<string | undefined>();
   const [addressError, setAddressError] = React.useState<string | undefined>();
   const [serviceError, setServiceError] = React.useState<string | undefined>();
@@ -125,6 +182,16 @@ const CreateRescueOrderPage: React.FC = () => {
     },
     [],
   );
+
+  const serviceGroups = SERVICE_GROUPS_BY_KIND[serviceKind];
+  const serviceNoun = serviceKind === 'Vận tải' ? 'vận tải' : 'cứu hộ';
+
+  const selectServiceKind = (kind: ServiceKind) => {
+    if (kind === serviceKind) return;
+    setServiceKind(kind);
+    setServices([]);
+    setServiceError(undefined);
+  };
 
   const toggleService = (name: string) => {
     setServices((prev) =>
@@ -166,13 +233,15 @@ const CreateRescueOrderPage: React.FC = () => {
 
   const submit = () => {
     const amount = amountDigits ? Number(amountDigits) : 0;
+    const nextPlate = plate.trim() ? undefined : 'Nhập biển số xe.';
     const nextPhone = phone.trim() ? undefined : 'Nhập số điện thoại.';
     const nextAddress = address.trim() ? undefined : 'Nhập vị trí sự cố.';
-    const nextService = services.length > 0 ? undefined : 'Chọn ít nhất một dịch vụ cứu hộ.';
+    const nextService = services.length > 0 ? undefined : `Chọn ít nhất một dịch vụ ${serviceNoun}.`;
     const nextDriver = driverName ? undefined : 'Chọn tài xế cứu hộ.';
     const nextVehicle = vehicleLabel ? undefined : 'Chọn xe cứu hộ.';
     const nextAmount = amount > 0 ? undefined : 'Nhập số tiền cứu hộ.';
 
+    setPlateError(nextPlate);
     setPhoneError(nextPhone);
     setAddressError(nextAddress);
     setServiceError(nextService);
@@ -180,20 +249,33 @@ const CreateRescueOrderPage: React.FC = () => {
     setVehicleError(nextVehicle);
     setAmountError(nextAmount);
 
-    if (
-      nextPhone ||
-      nextAddress ||
-      nextService ||
-      nextDriver ||
-      nextVehicle ||
-      nextAmount
-    ) {
+    const firstMissing = (
+      [
+        ['plate', nextPlate],
+        ['phone', nextPhone],
+        ['service', nextService],
+        ['address', nextAddress],
+        ['driver', nextDriver],
+        ['vehicle', nextVehicle],
+        ['amount', nextAmount],
+      ] as const
+    ).find(([, message]) => message);
+
+    if (firstMissing) {
+      const node = fieldRefs.current[firstMissing[0]];
+      const scroller = scrollRef.current;
+      if (node && scroller) {
+        const top =
+          node.getBoundingClientRect().top -
+          scroller.getBoundingClientRect().top +
+          scroller.scrollTop -
+          12;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
       return;
     }
 
-    const needsTow = SERVICE_GROUPS.some(
-      (group) => TOW_GROUPS.has(group.name) && group.items.some((item) => services.includes(item)),
-    );
+    const needsTow = serviceKind === 'Cứu hộ' && services.some((name) => TOW_SERVICES.has(name));
     const serviceMode: RescueServiceMode =
       needsTow || towDestination.trim() ? 'Cẩu kéo' : 'Hỗ trợ tại chỗ';
     const driver = MOCK_QUOTE_DRIVERS.find((item) => item.name === driverName);
@@ -203,7 +285,7 @@ const CreateRescueOrderPage: React.FC = () => {
 
     submittedRef.current = true;
     const result = createFieldOrder({
-      plate: plate.trim() || 'Chưa có biển',
+      plate: plate.trim(),
       brand: '',
       model: '',
       address,
@@ -220,6 +302,7 @@ const CreateRescueOrderPage: React.FC = () => {
       rescueDriverName: driver?.name,
       rescueVehiclePlate: vehicle?.plate,
       estimatedTotal: amount,
+      orderLine: serviceKind === 'Vận tải' ? 'van-tai' : 'cuu-ho',
     });
     setCreated({ started: result.started });
   };
@@ -250,7 +333,9 @@ const CreateRescueOrderPage: React.FC = () => {
       navigate('/home', { replace: true });
       return;
     }
-    navigate('/manage?segment=rescue', { replace: true });
+    const line = serviceKind === 'Vận tải' ? 'van-tai' : 'cuu-ho';
+    const query = line === 'van-tai' ? 'line=van-tai' : 'line=cuu-ho&channel=noi-bo';
+    navigate(`/manage?${query}`, { replace: true });
   };
 
   if (picker) {
@@ -281,36 +366,88 @@ const CreateRescueOrderPage: React.FC = () => {
       <header className="grab-staff-hero">
         <DlsTopNav title="Tạo yêu cầu cứu hộ" onBack={() => navigate('/manage')} />
       </header>
-      <div className="dm-scroll-area">
+      <div className="dm-scroll-area" ref={scrollRef}>
         <div className="req-form__sections">
           <section className="grab-staff-form-card" aria-labelledby="req-section-customer">
             <div className="grab-staff-form-card__title">
               <h2 id="req-section-customer">Thông tin khách hàng</h2>
             </div>
             <div className="grab-staff-form-grid">
-              <DlsTextField
-                label="Biển số xe"
-                value={plate}
-                onChange={setPlate}
-                placeholder="Để trống nếu xe chưa có biển"
-              />
-              <DlsTextField
-                label="Tên chủ xe"
-                value={ownerName}
-                onChange={setOwnerName}
-                placeholder="VD: Nguyễn Thu Trang"
-              />
-              <DlsTextField
-                label="Số điện thoại"
-                value={phone}
-                onChange={(value) => {
-                  setPhone(value);
-                  if (phoneError) setPhoneError(undefined);
+              <div className="dls-field">
+                <DlsLabel>Loại khách hàng</DlsLabel>
+                <div className="req-form__kind" role="radiogroup" aria-label="Loại khách hàng">
+                  {CUSTOMER_TYPES.map((type) => {
+                    const on = customerType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        className={`req-form__kind-btn${on ? ' req-form__kind-btn--on' : ''}`}
+                        onClick={() => {
+                          if (type === customerType) return;
+                          setCustomerType(type);
+                          setOwnerName('');
+                        }}
+                      >
+                        {type}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div
+                ref={(node) => {
+                  fieldRefs.current.plate = node ?? undefined;
                 }}
-                placeholder="VD: 0981234567"
-                required
-                error={phoneError}
-              />
+              >
+                <DlsTextField
+                  label="Biển số xe"
+                  value={plate}
+                  onChange={(value) => {
+                    setPlate(normalizePlate(value));
+                    if (plateError) setPlateError(undefined);
+                  }}
+                  placeholder="VD: 30A12345"
+                  required
+                  error={plateError}
+                />
+              </div>
+              {customerType === 'Doanh nghiệp' ? (
+                <DlsSelectField
+                  label="Tên doanh nghiệp"
+                  value={ownerName}
+                  options={DEMO_COMPANIES}
+                  onChange={setOwnerName}
+                  placeholder="Chọn doanh nghiệp"
+                  sheetTitle="Tên doanh nghiệp"
+                />
+              ) : (
+                <DlsTextField
+                  label="Tên chủ xe"
+                  value={ownerName}
+                  onChange={setOwnerName}
+                  placeholder="VD: Nguyễn Thu Trang"
+                />
+              )}
+              <div
+                ref={(node) => {
+                  fieldRefs.current.phone = node ?? undefined;
+                }}
+              >
+                <DlsTextField
+                  label="Số điện thoại"
+                  value={phone}
+                  onChange={(value) => {
+                    setPhone(value);
+                    if (phoneError) setPhoneError(undefined);
+                  }}
+                  placeholder="VD: 0981234567"
+                  required
+                  error={phoneError}
+                />
+              </div>
             </div>
           </section>
 
@@ -320,44 +457,32 @@ const CreateRescueOrderPage: React.FC = () => {
             </div>
             <div className="grab-staff-form-grid">
               <div className="dls-field">
-                <div className="req-form__stops">
-                  <button type="button" className="req-form__stop" onClick={() => openPicker('incident')}>
-                    <span className="req-form__stop-icon req-form__stop-icon--from" aria-hidden>
-                      <MapPin size={16} strokeWidth={2.25} />
-                    </span>
-                    <span className="req-form__stop-copy">
-                      <span className="req-form__stop-label">
-                        Vị trí sự cố
-                        <span className="dls-required">*</span>
-                      </span>
-                      <span className={address ? 'req-form__stop-value' : 'req-form__stop-placeholder'}>
-                        {address || 'Chọn trên bản đồ'}
-                      </span>
-                    </span>
-                    <ChevronRight size={18} className="req-form__stop-chevron" aria-hidden />
-                  </button>
-                  <button type="button" className="req-form__stop" onClick={() => openPicker('tow')}>
-                    <span className="req-form__stop-icon req-form__stop-icon--to" aria-hidden>
-                      <Flag size={15} strokeWidth={2.25} />
-                    </span>
-                    <span className="req-form__stop-copy">
-                      <span className="req-form__stop-label">Điểm kéo xe về</span>
-                      <span className={towDestination ? 'req-form__stop-value' : 'req-form__stop-placeholder'}>
-                        {towDestination || 'Không bắt buộc'}
-                      </span>
-                    </span>
-                    <ChevronRight size={18} className="req-form__stop-chevron" aria-hidden />
-                  </button>
+                <DlsLabel>Loại dịch vụ</DlsLabel>
+                <div className="req-form__kind" role="radiogroup" aria-label="Loại dịch vụ">
+                  {SERVICE_KINDS.map((kind) => {
+                    const on = serviceKind === kind;
+                    return (
+                      <button
+                        key={kind}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        className={`req-form__kind-btn${on ? ' req-form__kind-btn--on' : ''}`}
+                        onClick={() => selectServiceKind(kind)}
+                      >
+                        {kind}
+                      </button>
+                    );
+                  })}
                 </div>
-                {addressError && (
-                  <p className="dls-field-error" role="alert">
-                    {addressError}
-                  </p>
-                )}
               </div>
-
-              <div className="dls-field">
-                <DlsLabel required>Dịch vụ cứu hộ</DlsLabel>
+              <div
+                className="dls-field"
+                ref={(node) => {
+                  fieldRefs.current.service = node ?? undefined;
+                }}
+              >
+                <DlsLabel required>{serviceKind === 'Vận tải' ? 'Dịch vụ vận tải' : 'Dịch vụ cứu hộ'}</DlsLabel>
                 <button
                   type="button"
                   className={`dls-select-trigger${services.length ? '' : ' dls-select-trigger--placeholder'}`}
@@ -388,60 +513,61 @@ const CreateRescueOrderPage: React.FC = () => {
                   </p>
                 )}
               </div>
-
-            </div>
-          </section>
-
-          <section className="grab-staff-form-card" aria-labelledby="req-section-crew">
-            <div className="grab-staff-form-card__title">
-              <h2 id="req-section-crew">Thông tin cứu hộ</h2>
-            </div>
-            <div className="grab-staff-form-grid">
-              <DlsSelectField
-                label="Tài xế cứu hộ"
-                value={driverName}
-                options={DRIVER_OPTIONS}
-                onChange={(value) => {
-                  setDriverName(value);
-                  setDriverError(undefined);
+              <div
+                className="dls-field"
+                ref={(node) => {
+                  fieldRefs.current.address = node ?? undefined;
                 }}
-                placeholder="Chọn tài xế"
-                sheetTitle="Tài xế cứu hộ"
-                required
-              />
-              {driverError && (
-                <p className="dls-field-error" role="alert">
-                  {driverError}
-                </p>
-              )}
-              <DlsSelectField
-                label="Xe cứu hộ"
-                value={vehicleLabel}
-                options={VEHICLE_OPTIONS}
-                onChange={(value) => {
-                  setVehicleLabel(value);
-                  setVehicleError(undefined);
-                }}
-                placeholder="Chọn xe cứu hộ"
-                sheetTitle="Xe cứu hộ"
-                required
-              />
-              {vehicleError && (
-                <p className="dls-field-error" role="alert">
-                  {vehicleError}
-                </p>
-              )}
-              <DlsTextField
-                label="Số tiền cứu hộ (bao gồm thuế)"
-                value={formatMoneyInput(amountDigits)}
-                onChange={(value) => {
-                  setAmountDigits(value.replace(/\D/g, ''));
-                  if (amountError) setAmountError(undefined);
-                }}
-                placeholder="VD: 1.500.000"
-                required
-                error={amountError}
-              />
+              >
+                <div className="req-form__stops">
+                  <button type="button" className="req-form__stop" onClick={() => openPicker('incident')}>
+                    <span className="req-form__stop-icon req-form__stop-icon--from" aria-hidden>
+                      <MapPin size={16} strokeWidth={2.25} />
+                    </span>
+                    <span className="req-form__stop-copy">
+                      <span className="req-form__stop-label">
+                        Vị trí sự cố
+                        <span className="dls-required">*</span>
+                      </span>
+                      <span className="req-form__stop-line">
+                        <span className={address ? 'req-form__stop-value' : 'req-form__stop-placeholder'}>
+                          {address || 'Chọn trên bản đồ'}
+                        </span>
+                        {incidentPoint && (
+                          <span className="mission-task-card__distance">
+                            {formatDistanceKm(distanceKm(EMPTY_MAP_CENTER, incidentPoint))}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="req-form__stop-chevron" aria-hidden />
+                  </button>
+                  <button type="button" className="req-form__stop" onClick={() => openPicker('tow')}>
+                    <span className="req-form__stop-icon req-form__stop-icon--to" aria-hidden>
+                      <Flag size={15} strokeWidth={2.25} />
+                    </span>
+                    <span className="req-form__stop-copy">
+                      <span className="req-form__stop-label">Điểm kéo xe về</span>
+                      <span className="req-form__stop-line">
+                        <span className={towDestination ? 'req-form__stop-value' : 'req-form__stop-placeholder'}>
+                          {towDestination || 'Không bắt buộc'}
+                        </span>
+                        {incidentPoint && towPoint && (
+                          <span className="mission-task-card__distance mission-task-card__distance--tow">
+                            {formatDistanceKm(distanceKm(incidentPoint, towPoint))}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="req-form__stop-chevron" aria-hidden />
+                  </button>
+                </div>
+                {addressError && (
+                  <p className="dls-field-error" role="alert">
+                    {addressError}
+                  </p>
+                )}
+              </div>
             </div>
           </section>
 
@@ -504,6 +630,77 @@ const CreateRescueOrderPage: React.FC = () => {
               </div>
             </div>
           </section>
+
+          <section className="grab-staff-form-card" aria-labelledby="req-section-crew">
+            <div className="grab-staff-form-card__title">
+              <h2 id="req-section-crew">Thông tin cứu hộ</h2>
+            </div>
+            <div className="grab-staff-form-grid">
+              <div
+                ref={(node) => {
+                  fieldRefs.current.driver = node ?? undefined;
+                }}
+              >
+                <DlsSelectField
+                  label="Tài xế cứu hộ"
+                  value={driverName}
+                  options={DRIVER_OPTIONS}
+                  onChange={(value) => {
+                    setDriverName(value);
+                    setDriverError(undefined);
+                  }}
+                  placeholder="Chọn tài xế"
+                  sheetTitle="Tài xế cứu hộ"
+                  required
+                />
+                {driverError && (
+                  <p className="dls-field-error" role="alert">
+                    {driverError}
+                  </p>
+                )}
+              </div>
+              <div
+                ref={(node) => {
+                  fieldRefs.current.vehicle = node ?? undefined;
+                }}
+              >
+                <DlsSelectField
+                  label="Xe cứu hộ"
+                  value={vehicleLabel}
+                  options={VEHICLE_OPTIONS}
+                  onChange={(value) => {
+                    setVehicleLabel(value);
+                    setVehicleError(undefined);
+                  }}
+                  placeholder="Chọn xe cứu hộ"
+                  sheetTitle="Xe cứu hộ"
+                  required
+                />
+                {vehicleError && (
+                  <p className="dls-field-error" role="alert">
+                    {vehicleError}
+                  </p>
+                )}
+              </div>
+              <div
+                ref={(node) => {
+                  fieldRefs.current.amount = node ?? undefined;
+                }}
+              >
+                <DlsTextField
+                  label="Số tiền cứu hộ (bao gồm thuế)"
+                  value={formatMoneyInput(amountDigits)}
+                  onChange={(value) => {
+                    setAmountDigits(value.replace(/\D/g, ''));
+                    if (amountError) setAmountError(undefined);
+                  }}
+                  placeholder="VD: 1.500.000"
+                  required
+                  error={amountError}
+                />
+              </div>
+            </div>
+          </section>
         </div>
       </div>
       <footer className="req-form__footer">
@@ -515,13 +712,13 @@ const CreateRescueOrderPage: React.FC = () => {
           className="dls-sheet-overlay"
           role="dialog"
           aria-modal
-          aria-label="Chọn dịch vụ cứu hộ"
+          aria-label={`Chọn dịch vụ ${serviceNoun}`}
           onClick={() => setServiceOpen(false)}
         >
           <div className="dls-sheet" onClick={(event) => event.stopPropagation()}>
-            <DlsSheetHeader title="Chọn dịch vụ cứu hộ" onClose={() => setServiceOpen(false)} />
+            <DlsSheetHeader title={`Chọn dịch vụ ${serviceNoun}`} onClose={() => setServiceOpen(false)} />
             <div className="dls-sheet-body dls-sheet-body--form">
-              {SERVICE_GROUPS.map((group) => (
+              {serviceGroups.map((group) => (
                 <section key={group.name} className="req-form__group" aria-label={group.name}>
                   <p className="dls-label">{group.name}</p>
                   <div className="dls-reason-list">
@@ -585,9 +782,11 @@ const CreateRescueOrderPage: React.FC = () => {
         message={
           created?.started
             ? 'Yêu cầu đã được ghi nhận và gán cho bạn. Bắt đầu thực hiện cứu hộ trên màn Cứu hộ.'
-            : 'Yêu cầu đã được ghi nhận và nằm trong Đơn đang cứu hộ.'
+            : driverName === currentDriverName
+              ? 'Yêu cầu đã được ghi nhận. Đơn chưa bắt đầu cứu hộ vì bạn đang có đơn khác hoặc không ở chế độ thực hiện.'
+              : `Yêu cầu đã giao cho ${driverName}. Chờ đối tác nhận đơn rồi mới bắt đầu cứu hộ.`
         }
-        confirmLabel={created?.started ? 'Thực hiện cứu hộ' : 'Xem đơn'}
+        confirmLabel={created?.started ? 'Thực hiện cứu hộ' : 'Đã hiểu'}
         cancelLabel=""
         onConfirm={finish}
         onCancel={finish}

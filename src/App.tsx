@@ -65,8 +65,15 @@ const SignInRedirect: React.FC<{
 
 const AppRoutes: React.FC = () => {
   const { isLoggedIn, login, logout } = useAuth();
-  const { appliedFilter, setAppliedFilter, emptyFilter } = useApp();
+  const {
+    appliedFilter,
+    setAppliedFilter,
+    appliedQuoteFilter,
+    setAppliedQuoteFilter,
+    emptyFilter,
+  } = useApp();
   const [filterOpen, setFilterOpen] = React.useState(false);
+  const [filterMode, setFilterMode] = React.useState<'rescue' | 'quote'>('rescue');
   const [filterDraft, setFilterDraft] = React.useState<FilterState>(emptyFilter);
   const [locationPrompt, setLocationPrompt] = React.useState(false);
 
@@ -127,7 +134,13 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <RoleGuard allow={['quote-rescue', 'quote-only']}>
-                <QuoteListPage />
+                <QuoteListPage
+                  onOpenFilter={() => {
+                    setFilterMode('quote');
+                    setFilterDraft(appliedQuoteFilter);
+                    setFilterOpen(true);
+                  }}
+                />
               </RoleGuard>
             </ProtectedRoute>
           }
@@ -149,6 +162,7 @@ const AppRoutes: React.FC = () => {
               <RoleGuard allow={['quote-rescue', 'rescue-only', 'quote-only']}>
                 <ActivityPage
                   onOpenFilter={() => {
+                    setFilterMode('rescue');
                     setFilterDraft(appliedFilter);
                     setFilterOpen(true);
                   }}
@@ -217,11 +231,13 @@ const AppRoutes: React.FC = () => {
 
       <FilterSheet
         open={filterOpen}
+        mode={filterMode}
         value={filterDraft}
         onChange={setFilterDraft}
         onClose={() => setFilterOpen(false)}
         onApply={() => {
-          setAppliedFilter(filterDraft);
+          if (filterMode === 'quote') setAppliedQuoteFilter(filterDraft);
+          else setAppliedFilter(filterDraft);
           setFilterOpen(false);
         }}
         onClear={() => setFilterDraft(emptyFilter)}

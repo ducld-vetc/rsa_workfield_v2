@@ -19,6 +19,13 @@
   padding: var(--dls-space-16) var(--dls-content-padding) var(--dls-space-8);
 }
 
+.quote-inbox-page__header--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dls-space-8);
+}
+
 .quote-inbox-page__header h1 {
   margin: 0;
   font-size: var(--dls-text-xl);
@@ -106,6 +113,10 @@
 .quote-segment__btn--on .quote-segment__badge--muted {
   background: var(--dls-outline);
   color: var(--dls-primary);
+}
+
+.quote-segment--sub {
+  margin-top: calc(var(--dls-space-12) * -1);
 }
 
 .quote-inbox-page__body {
@@ -1075,8 +1086,12 @@ button.quote-photos-compact__item:active {
 
 .quote-history-row {
   border-radius: var(--dls-radius-12);
-  background: var(--dls-theme-variant);
+  background: var(--dls-theme);
   overflow: hidden;
+}
+
+.quote-inbox-page__body--history {
+  background: var(--dls-theme-variant);
 }
 
 .quote-history-row__identity {

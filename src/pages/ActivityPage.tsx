@@ -1,14 +1,13 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { FilterIcon } from '@dls/components';
+import { DlsChip, FilterIcon } from '@dls/components';
 import { EmptyState } from '../components/EmptyState';
 import MissionAssignSheet from '../components/MissionAssignSheet';
 import MissionTaskCard from '../components/MissionTaskCard';
 import ReasonSheet from '../components/ReasonSheet';
 import { ConfirmDialog } from '../components/DetailRow';
 import ActivityOrderRow from '../components/ActivityOrderRow';
-import QuoteHistoryRow from '../components/QuoteHistoryRow';
 import MainShell from '../layouts/MainShell';
 import { useApp } from '../context/AppContext';
 import {
@@ -20,6 +19,7 @@ import {
   filterOrders,
   isFilterActive,
 } from '../utils/orderFilter';
+import { orderLineOf, rescueChannelOf, type OrderLine, type RescueChannel } from '../types';
 import {
   canReassignDriver,
   canReassignOrder,
@@ -31,7 +31,7 @@ import {
   patchRejectOrder,
 } from '../utils/orderHandler';
 
-type ManageSegment = 'quoted' | 'rescue';
+type ManageLine = OrderLine;
 
 function updatedAtValue(item: { updatedAt?: number; timestamp: string }): number {
   if (typeof item.updatedAt === 'number') return item.updatedAt;
@@ -56,7 +56,6 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     orders,
-    quoteOrders,
     readyForRescue,
     updateOrder,
     demoHasOrders,
@@ -86,19 +85,32 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const filteredOrders = filterOrders(roleOrders, appliedFilter, {
     includeServiceTypes: false,
   });
-  const assignedMissions = filteredOrders
-    .filter((order) => isMissionOfferedToMe(order, currentDriverId))
-    .sort(byUpdatedAtDesc);
   const isQuoteOnly = driverRole === 'quote-only';
   const canAssignToOther = canReassignDriver(driverRole);
-  const showQuoted = driverRole !== 'rescue-only';
-  const segment: ManageSegment =
-    !showQuoted || searchParams.get('segment') === 'rescue'
-      ? 'rescue'
-      : searchParams.get('segment') === 'quoted' || isQuoteOnly
-        ? 'quoted'
-        : 'rescue';
-  const sorted = [...filteredOrders].sort(byUpdatedAtDesc);
+  const lineParam = searchParams.get('line');
+  const line: 'all' | ManageLine =
+    lineParam === 'van-tai' || lineParam === 'cuu-ho' ? lineParam : 'all';
+  const channelParam = searchParams.get('channel');
+  const channel: 'all' | RescueChannel =
+    line === 'cuu-ho' && (channelParam === 'vetc' || channelParam === 'noi-bo')
+      ? channelParam
+      : 'all';
+  const lineOrders = filteredOrders.filter((order) => {
+    if (line !== 'all' && orderLineOf(order) !== line) return false;
+    if (line === 'cuu-ho' && channel !== 'all' && rescueChannelOf(order) !== channel) return false;
+    return true;
+  });
+  const assignedMissions = lineOrders
+    .filter((order) => isMissionOfferedToMe(order, currentDriverId))
+    .sort(byUpdatedAtDesc);
+  const transportCount = filteredOrders.filter((order) => orderLineOf(order) === 'van-tai').length;
+  const vetcCount = filteredOrders.filter(
+    (order) => orderLineOf(order) === 'cuu-ho' && rescueChannelOf(order) === 'vetc',
+  ).length;
+  const internalCount = filteredOrders.filter(
+    (order) => orderLineOf(order) === 'cuu-ho' && rescueChannelOf(order) === 'noi-bo',
+  ).length;
+  const sorted = [...lineOrders].sort(byUpdatedAtDesc);
   const missionIds = new Set(
     isQuoteOnly ? [] : assignedMissions.map((order) => order.id),
   );
@@ -110,18 +122,13 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const processed = sorted.filter(
     (order) => order.status !== 'cho-nhan' && order.status !== 'dang-cuu-ho',
   );
-  const quoted = demoHasOrders
-    ? quoteOrders
-        .filter((order) => order.quoteStatus === 'da-bao-gia' || order.quoteStatus === 'tu-choi')
-        .sort(byUpdatedAtDesc)
-    : [];
   const filterActive = isFilterActive(appliedFilter, false);
   const activeFilterCount = countActiveFilterCriteria(appliedFilter, false);
 
-  const setSegment = (next: ManageSegment) => {
-    setSearchParams(next === 'rescue' ? { segment: 'rescue' } : { segment: 'quoted' }, {
-      replace: true,
-    });
+  const selectScope = (next: 'all' | 'vetc' | 'noi-bo' | 'van-tai') => {
+    if (next === 'all') setSearchParams({}, { replace: true });
+    else if (next === 'van-tai') setSearchParams({ line: 'van-tai' }, { replace: true });
+    else setSearchParams({ line: 'cuu-ho', channel: next }, { replace: true });
   };
 
   const handleAccept = (id: string) => {
@@ -202,59 +209,55 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
                 <Plus size={16} strokeWidth={2.25} />
                 Tạo đơn
               </button>
-              {segment === 'rescue' && onOpenFilter && (
-                <button
-                  type="button"
-                  className={`grab-page-header__filter${filterActive ? ' grab-page-header__filter--active' : ''}`}
-                  onClick={onOpenFilter}
-                  aria-label="Bộ lọc đơn cứu hộ"
-                >
-                  <FilterIcon />
-                  {filterActive && (
-                    <span className="grab-page-header__filter-badge" aria-hidden>
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-              )}
             </div>
           </header>
 
-          {showQuoted && (
-            <div className="quote-segment" role="tablist" aria-label="Nhóm đơn cứu hộ">
+          <div className="manage-smart-filter" role="toolbar" aria-label="Lọc loại đơn">
+            {onOpenFilter && (
               <button
                 type="button"
-                role="tab"
-                aria-selected={segment === 'quoted'}
-                className={`quote-segment__btn ${segment === 'quoted' ? 'quote-segment__btn--on' : ''}`}
-                onClick={() => setSegment('quoted')}
+                className={`grab-page-header__filter manage-smart-filter__btn${filterActive ? ' grab-page-header__filter--active' : ''}`}
+                onClick={onOpenFilter}
+                aria-label="Bộ lọc đơn"
               >
-                <span className="quote-segment__label">Báo giá</span>
-                {quoted.length > 0 && (
-                  <span className="quote-segment__badge quote-segment__badge--muted">
-                    {quoted.length}
+                <FilterIcon />
+                {filterActive && (
+                  <span className="grab-page-header__filter-badge" aria-hidden>
+                    {activeFilterCount}
                   </span>
                 )}
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={segment === 'rescue'}
-                className={`quote-segment__btn ${segment === 'rescue' ? 'quote-segment__btn--on' : ''}`}
-                onClick={() => setSegment('rescue')}
-              >
-                <span className="quote-segment__label">Cứu hộ</span>
-                {assignedMissions.length + inRescue.length > 0 && (
-                  <span className="quote-segment__badge">
-                    {assignedMissions.length + inRescue.length}
-                  </span>
-                )}
-              </button>
+            )}
+            <div className="manage-smart-filter__chips">
+              <DlsChip
+                label="Tất cả"
+                brand={line === 'all'}
+                selected={line === 'all'}
+                onClick={() => selectScope('all')}
+              />
+              <DlsChip
+                label={vetcCount > 0 ? `Cứu hộ VETC ${vetcCount}` : 'Cứu hộ VETC'}
+                brand={channel === 'vetc'}
+                selected={channel === 'vetc'}
+                onClick={() => selectScope('vetc')}
+              />
+              <DlsChip
+                label={internalCount > 0 ? `Cứu hộ nội bộ ${internalCount}` : 'Cứu hộ nội bộ'}
+                brand={channel === 'noi-bo'}
+                selected={channel === 'noi-bo'}
+                onClick={() => selectScope('noi-bo')}
+              />
+              <DlsChip
+                label={transportCount > 0 ? `Vận tải ${transportCount}` : 'Vận tải'}
+                brand={line === 'van-tai'}
+                selected={line === 'van-tai'}
+                onClick={() => selectScope('van-tai')}
+              />
             </div>
-          )}
+          </div>
         </div>
 
-        {segment === 'rescue' && filterActive && (
+        {filterActive && (
           <div className="grab-activity__filter-bar">
             <p className="grab-activity__filter-summary">
               Đang lọc theo {activeFilterCount} tiêu chí
@@ -269,39 +272,20 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
           </div>
         )}
 
-        {segment === 'rescue' && !isQuoteOnly && !readyForRescue && (
+        {!isQuoteOnly && !readyForRescue && (
           <div className="dls-alert-inline mission-home__banner" role="status">
             Bạn đang tạm nghỉ — bật sẵn sàng trong mục Tài khoản khi có thể đi cứu hộ.
           </div>
         )}
 
-        {segment === 'rescue' && isQuoteOnly && (
+        {isQuoteOnly && (
           <div className="dls-alert-inline mission-home__banner mission-home__banner--info" role="status">
             Chế độ chỉ xem — bạn có thể xem đơn của đơn vị và đổi tài xế khi cần.
           </div>
         )}
 
         <div className="grab-activity__scroll">
-          {segment === 'quoted' && quoted.length === 0 && (
-            <EmptyState
-              title="Chưa có báo giá nào"
-              hint="Sau khi gửi báo giá, đơn sẽ hiện tại đây."
-              actionLabel={driverRole === 'rescue-only' ? undefined : 'Mở hàng chờ báo giá'}
-              onAction={
-                driverRole === 'rescue-only' ? undefined : () => navigate('/quotes')
-              }
-            />
-          )}
-
-          {segment === 'quoted' && quoted.length > 0 && (
-            <div className="quote-history-list manage-quoted-list">
-              {quoted.map((order) => (
-                <QuoteHistoryRow key={order.id} order={order} />
-              ))}
-            </div>
-          )}
-
-          {segment === 'rescue' && !isQuoteOnly && assignedMissions.length > 0 && (
+          {!isQuoteOnly && assignedMissions.length > 0 && (
             <section className="mission-home__section" aria-label="Nhiệm vụ được giao">
               <div className="mission-home__list">
                 {assignedMissions.map((order) => (
@@ -320,7 +304,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
             </section>
           )}
 
-          {segment === 'rescue' && inRescue.length > 0 && (
+          {inRescue.length > 0 && (
             <section className="grab-activity__section" aria-label="Đơn đang cứu hộ">
               <div className="grab-activity__list">
                 {inRescue.map((order) => (
@@ -336,7 +320,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
             </section>
           )}
 
-          {segment === 'rescue' && processed.length > 0 && (
+          {processed.length > 0 && (
             <section className="grab-activity__section" aria-label="Đơn đã xử lý">
               <div className="grab-activity__list">
                 {processed.map((order) => (
@@ -352,9 +336,19 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
             </section>
           )}
 
-          {segment === 'rescue' && rescueEmpty && (
+          {rescueEmpty && (
             <EmptyState
-              title={filterActive ? 'Không có đơn phù hợp' : 'Chưa có đơn đang cứu hộ'}
+              title={
+                filterActive
+                  ? 'Không có đơn phù hợp'
+                  : line === 'van-tai'
+                    ? 'Chưa có đơn vận tải'
+                    : channel === 'noi-bo'
+                      ? 'Chưa có đơn nội bộ'
+                      : channel === 'vetc'
+                        ? 'Chưa có đơn VETC'
+                        : 'Chưa có đơn'
+              }
               hint={
                 filterActive
                   ? 'Thử đổi ngày tạo, biển số hoặc trạng thái trong bộ lọc.'

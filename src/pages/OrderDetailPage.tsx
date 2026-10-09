@@ -16,6 +16,8 @@ import { RescueOrder, STATUS_LABELS } from '../types';
 import {
   canReassignDriver,
   canReassignOrder,
+  isMissionOfferedToMe,
+  patchAcceptOrder,
   patchAssignOrder,
 } from '../utils/orderHandler';
 import { MOCK_QUOTE_DRIVERS, MOCK_RESCUE_VEHICLES } from '../data/mockQuoteResources';
@@ -56,7 +58,7 @@ function getEtaLabel(order: RescueOrder): string | null {
 const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getOrder, updateOrder, getQuoteOrder, driverRole } = useApp();
+  const { getOrder, updateOrder, getQuoteOrder, driverRole, currentDriverId, currentDriverName } = useApp();
   const order = getOrder(id ?? '');
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const [assignOpen, setAssignOpen] = React.useState(false);
@@ -85,11 +87,15 @@ const OrderDetailPage: React.FC = () => {
   const isPending = order.status === 'cho-nhan';
   const isActive = order.status === 'dang-cuu-ho';
   const isQuoteOnly = driverRole === 'quote-only';
+  const offeredToMe = isMissionOfferedToMe(order, currentDriverId);
+  const handlingMine = isActive && order.activeHandlerDriverId === currentDriverId;
+  const waitingPartnerName =
+    isPending && !offeredToMe ? order.delegatedToDriverName : undefined;
   const canReassign = canReassignDriver(driverRole) && canReassignOrder(order);
   const canEditTow = !isQuoteOnly && (isPending || isActive);
-  const hasRescueFooter = !isQuoteOnly && (isPending || isActive);
+  const hasRescueFooter = !isQuoteOnly && (offeredToMe || handlingMine);
   const hasAssignFooter = isQuoteOnly && canReassign;
-  const hasFooter = hasRescueFooter || hasAssignFooter;
+  const hasFooter = hasRescueFooter || hasAssignFooter || Boolean(waitingPartnerName);
   const variant = STATUS_VARIANT[order.status];
   const showTow = hasTowService(order);
   const orderTotal = getOrderTotal(order);
@@ -109,7 +115,11 @@ const OrderDetailPage: React.FC = () => {
   const serviceLines = order.serviceLines ?? [{ name: order.services, value: '' }];
 
   const handleAccept = () => {
-    updateOrder(order.id, { status: 'dang-cuu-ho', jobStage: 'da-nhan', acceptCountdown: undefined });
+    if (!isMissionOfferedToMe(order, currentDriverId)) return;
+    updateOrder(order.id, {
+      ...patchAcceptOrder(order, currentDriverId, currentDriverName),
+      acceptCountdown: undefined,
+    });
     navigate('/home');
   };
 
@@ -337,6 +347,14 @@ const OrderDetailPage: React.FC = () => {
               )}
             </div>
           </div>
+
+          {waitingPartnerName && (
+            <div className="order-detail-sheet__footer">
+              <p className="dls-alert-inline" role="status">
+                Đang chờ {waitingPartnerName} nhận đơn. Chưa thể bắt đầu cứu hộ.
+              </p>
+            </div>
+          )}
 
           {hasRescueFooter && isPending && (
             <div className="order-detail-sheet__footer">

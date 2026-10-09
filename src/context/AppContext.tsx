@@ -45,6 +45,8 @@ interface AppContextValue {
   createFieldOrder: (input: FieldOrderInput) => { id: string; started: boolean };
   appliedFilter: FilterState;
   setAppliedFilter: (f: FilterState) => void;
+  appliedQuoteFilter: FilterState;
+  setAppliedQuoteFilter: (f: FilterState) => void;
   emptyFilter: FilterState;
 }
 
@@ -60,6 +62,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentDriverId, setCurrentDriverId] = React.useState(DEFAULT_DRIVER.id);
   const [demoHasOrders, setDemoHasOrders] = React.useState(true);
   const [appliedFilter, setAppliedFilter] = React.useState<FilterState>(EMPTY_FILTER);
+  const [appliedQuoteFilter, setAppliedQuoteFilter] = React.useState<FilterState>(EMPTY_FILTER);
 
   const updateOrder = (id: string, patch: Partial<RescueOrder>) => {
     setOrders((prev) =>
@@ -133,6 +136,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       customerPhone: input.customerPhone.trim() || undefined,
       estimatedTotal: input.estimatedTotal,
       priceConfirmed: input.estimatedTotal != null,
+      orderLine: input.orderLine ?? 'cuu-ho',
+      rescueChannel: input.orderLine === 'van-tai' ? undefined : 'noi-bo',
       delegatedToDriverId: input.rescueDriverId,
       delegatedToDriverName: input.rescueDriverName,
       delegatedVehiclePlate: input.rescueVehiclePlate,
@@ -220,6 +225,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createFieldOrder,
         appliedFilter,
         setAppliedFilter,
+        appliedQuoteFilter,
+        setAppliedQuoteFilter,
         emptyFilter: EMPTY_FILTER,
       }}
     >

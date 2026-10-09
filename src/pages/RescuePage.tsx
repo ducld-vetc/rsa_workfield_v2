@@ -19,7 +19,7 @@ import MainShell from '../layouts/MainShell';
 import { useApp } from '../context/AppContext';
 import { DlsStatusBadge } from '@dls/components';
 import { JOB_STAGE_LABELS, JobStage, RescueOrder } from '../types';
-import { getRescueEmptyCopy, getRescueTabActiveJob } from '../utils/orderHandler';
+import { getRescueEmptyCopy, getRescueTabActiveJob, isMissionOfferedToMe } from '../utils/orderHandler';
 
 const STAGE_ACTIONS: Record<JobStage, { label: string; next?: JobStage }> = {
   'cho-nhan': { label: 'Nhận đơn', next: 'da-nhan' },
@@ -98,7 +98,7 @@ const RescuePage: React.FC = () => {
   }
 
   const activeJob = getRescueTabActiveJob(orders, driverRole, currentDriverId);
-  const pendingCount = orders.filter((o) => o.status === 'cho-nhan').length;
+  const pendingCount = orders.filter((order) => isMissionOfferedToMe(order, currentDriverId)).length;
 
   if (!activeJob) {
     const emptyCopy = getRescueEmptyCopy(driverRole, readyForRescue, pendingCount);

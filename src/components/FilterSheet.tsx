@@ -6,9 +6,16 @@ import {
   DlsSheetHeader,
   DlsTextField,
 } from '@dls/components';
-import { FilterState, OrderStatus, SERVICE_TYPE_OPTIONS, STATUS_LABELS } from '../types';
+import {
+  FilterState,
+  OrderStatus,
+  QUOTE_FILTER_STATUSES,
+  QUOTE_STATUS_LABELS,
+  SERVICE_TYPE_OPTIONS,
+  STATUS_LABELS,
+} from '../types';
 
-const STATUS_OPTIONS: OrderStatus[] = [
+const RESCUE_STATUS_OPTIONS: OrderStatus[] = [
   'cho-nhan',
   'dang-cuu-ho',
   'hoan-thanh',
@@ -24,6 +31,7 @@ interface FilterSheetProps {
   onApply: () => void;
   onClear: () => void;
   showServiceTypes?: boolean;
+  mode?: 'rescue' | 'quote';
 }
 
 const FilterSheet: React.FC<FilterSheetProps> = ({
@@ -34,8 +42,20 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
   onApply,
   onClear,
   showServiceTypes = false,
+  mode = 'rescue',
 }) => {
   if (!open) return null;
+
+  const statusOptions =
+    mode === 'quote'
+      ? QUOTE_FILTER_STATUSES.map((status) => ({
+          id: status,
+          label: QUOTE_STATUS_LABELS[status],
+        }))
+      : RESCUE_STATUS_OPTIONS.map((status) => ({
+          id: status,
+          label: STATUS_LABELS[status],
+        }));
 
   const toggleService = (s: string) => {
     const set = new Set(value.serviceTypes);
@@ -44,7 +64,7 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
     onChange({ ...value, serviceTypes: Array.from(set) });
   };
 
-  const toggleStatus = (s: OrderStatus) => {
+  const toggleStatus = (s: string) => {
     const set = new Set(value.statuses);
     if (set.has(s)) set.delete(s);
     else set.add(s);
@@ -74,10 +94,10 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
           </div>
           <div className="dls-filter-section">
             <DlsTextField
-              label="Biển số xe"
+              label={mode === 'quote' ? 'Xe' : 'Biển số xe'}
               value={value.plate}
               onChange={(plate) => onChange({ ...value, plate })}
-              placeholder="Nhập biển số xe"
+              placeholder={mode === 'quote' ? 'Biển số xe khách hoặc xe cứu hộ' : 'Nhập biển số xe'}
             />
           </div>
           {showServiceTypes && (
@@ -98,12 +118,12 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
           <div className="dls-filter-section">
             <span className="dls-label">Trạng thái</span>
             <div className="dls-chip-wrap">
-              {STATUS_OPTIONS.map((s) => (
+              {statusOptions.map((status) => (
                 <DlsChip
-                  key={s}
-                  label={STATUS_LABELS[s]}
-                  selected={value.statuses.includes(s)}
-                  onClick={() => toggleStatus(s)}
+                  key={status.id}
+                  label={status.label}
+                  selected={value.statuses.includes(status.id)}
+                  onClick={() => toggleStatus(status.id)}
                 />
               ))}
             </div>

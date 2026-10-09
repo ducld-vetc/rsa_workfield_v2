@@ -1,9 +1,16 @@
 import React from 'react';
 import { ChevronDown, Flag, MapPin } from 'lucide-react';
-import { DlsStatusBadge } from '@dls/components';
+import { DlsStatusBadge, type DlsStatusVariant } from '@dls/components';
 import AddressMapLink from './AddressMapLink';
 import RescuePhotosSection from './RescuePhotosSection';
-import { isTowQuote, QUOTE_STATUS_LABELS, QuoteOrder } from '../types';
+import { isTowQuote, QUOTE_STATUS_LABELS, QuoteOrder, QuoteStatus } from '../types';
+
+function quoteStatusVariant(status: QuoteStatus): DlsStatusVariant {
+  if (status === 'tu-choi' || status === 'rejected' || status === 'da-huy') return 'danger';
+  if (status === 'het-han' || status === 'cho-bao-gia') return 'warning';
+  if (status === 'da-phan-cong') return 'info';
+  return 'success';
+}
 
 function formatPlateDisplay(plate: string): string {
   return plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
@@ -28,7 +35,7 @@ const QuoteHistoryRow: React.FC<{ order: QuoteOrder }> = ({ order }) => {
             <span className="quote-history-row__plate">{formatPlateDisplay(order.plate)}</span>
             <DlsStatusBadge
               label={QUOTE_STATUS_LABELS[order.quoteStatus]}
-              variant={order.quoteStatus === 'tu-choi' ? 'danger' : 'success'}
+              variant={quoteStatusVariant(order.quoteStatus)}
               showDot={false}
             />
           </div>

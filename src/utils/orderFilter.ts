@@ -1,4 +1,4 @@
-import { FilterState, RescueOrder } from '../types';
+import { FilterState, QuoteOrder, QuoteStatus, RescueOrder } from '../types';
 
 function parseDdMmYyyy(value: string): Date | null {
   const trimmed = value.trim();
@@ -23,10 +23,10 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-export function getOrderCreatedDate(order: RescueOrder): Date | null {
-  const datePart = order.timestamp.split(',')[1]?.trim();
-  if (!datePart) return null;
-  return parseDdMmYyyy(datePart);
+export function getOrderCreatedDate(order: { timestamp: string }): Date | null {
+  const match = order.timestamp.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!match) return null;
+  return parseDdMmYyyy(`${match[1]}/${match[2]}/${match[3]}`);
 }
 
 function normalizePlate(plate: string): string {
@@ -102,6 +102,35 @@ export function matchesOrderFilter(
   }
 
   return true;
+}
+
+function quoteStatusMatches(status: QuoteStatus, selected: string[]): boolean {
+  return selected.includes(status);
+}
+
+export function filterQuoteOrders(orders: QuoteOrder[], filter: FilterState): QuoteOrder[] {
+  if (!isFilterActive(filter, false)) return orders;
+
+  const plateQuery = normalizePlate(filter.plate);
+  const fromDate = parseDdMmYyyy(filter.fromDate);
+  const toDate = parseDdMmYyyy(filter.toDate);
+
+  return orders.filter((order) => {
+    if (plateQuery) {
+      const plates = [order.plate, order.rescueVehiclePlate ?? ''].map(normalizePlate);
+      if (!plates.some((plate) => plate.includes(plateQuery))) return false;
+    }
+
+    if (filter.statuses.length > 0 && !quoteStatusMatches(order.quoteStatus, filter.statuses)) {
+      return false;
+    }
+
+    const orderDate = getOrderCreatedDate(order);
+    if ((filter.fromDate.trim() || filter.toDate.trim()) && !orderDate) return false;
+    if (fromDate && orderDate && orderDate < startOfDay(fromDate)) return false;
+    if (toDate && orderDate && orderDate > startOfDay(toDate)) return false;
+    return true;
+  });
 }
 
 export function filterOrders(
