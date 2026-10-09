@@ -402,6 +402,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--dls-space-4);
+  max-width: 100%;
   height: 32px;
   padding: 0 var(--dls-space-12);
   border: 1px solid var(--dls-outline-variant);
@@ -414,6 +415,14 @@
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.dls-chip__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dls-chip--brand {

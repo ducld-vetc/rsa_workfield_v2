@@ -109,7 +109,7 @@ const RescuePage: React.FC = () => {
         setReadyForRescue(true);
         return;
       }
-      navigate('/activity');
+      navigate('/manage');
     };
 
     return (

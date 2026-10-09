@@ -1,5 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { FilterIcon } from '@dls/components';
 import { EmptyState } from '../components/EmptyState';
 import MissionAssignSheet from '../components/MissionAssignSheet';
@@ -7,6 +8,7 @@ import MissionTaskCard from '../components/MissionTaskCard';
 import ReasonSheet from '../components/ReasonSheet';
 import { ConfirmDialog } from '../components/DetailRow';
 import ActivityOrderRow from '../components/ActivityOrderRow';
+import QuoteHistoryRow from '../components/QuoteHistoryRow';
 import MainShell from '../layouts/MainShell';
 import { useApp } from '../context/AppContext';
 import {
@@ -23,12 +25,27 @@ import {
   canReassignOrder,
   isMissionOfferedToMe,
   isOrderVisibleInActivity,
-  isUnitOrdersView,
   patchAcceptOrder,
   patchAssignOrder,
   patchExpireOrder,
   patchRejectOrder,
 } from '../utils/orderHandler';
+
+type ManageSegment = 'quoted' | 'rescue';
+
+function updatedAtValue(item: { updatedAt?: number; timestamp: string }): number {
+  if (typeof item.updatedAt === 'number') return item.updatedAt;
+  const match = item.timestamp.match(
+    /(\d{1,2}):(\d{2}):(\d{2})[,\s]+(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+  );
+  if (!match) return 0;
+  const [, hh, mm, ss, dd, mo, yyyy] = match;
+  return new Date(Number(yyyy), Number(mo) - 1, Number(dd), Number(hh), Number(mm), Number(ss)).getTime();
+}
+
+function byUpdatedAtDesc<T extends { updatedAt?: number; timestamp: string }>(a: T, b: T): number {
+  return updatedAtValue(b) - updatedAtValue(a);
+}
 
 interface ActivityPageProps {
   onOpenFilter?: () => void;
@@ -36,8 +53,10 @@ interface ActivityPageProps {
 
 const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     orders,
+    quoteOrders,
     readyForRescue,
     updateOrder,
     demoHasOrders,
@@ -67,34 +86,43 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const filteredOrders = filterOrders(roleOrders, appliedFilter, {
     includeServiceTypes: false,
   });
-  const assignedMissions = filteredOrders.filter((order) =>
-    isMissionOfferedToMe(order, currentDriverId),
-  );
+  const assignedMissions = filteredOrders
+    .filter((order) => isMissionOfferedToMe(order, currentDriverId))
+    .sort(byUpdatedAtDesc);
   const isQuoteOnly = driverRole === 'quote-only';
-  const isUnitView = isUnitOrdersView(driverRole);
   const canAssignToOther = canReassignDriver(driverRole);
-  const sorted = [...filteredOrders].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  const listTitle = isUnitView ? 'Tất cả đơn' : 'Đơn của tôi';
+  const showQuoted = driverRole !== 'rescue-only';
+  const segment: ManageSegment =
+    !showQuoted || searchParams.get('segment') === 'rescue'
+      ? 'rescue'
+      : searchParams.get('segment') === 'quoted' || isQuoteOnly
+        ? 'quoted'
+        : 'rescue';
+  const sorted = [...filteredOrders].sort(byUpdatedAtDesc);
+  const missionIds = new Set(
+    isQuoteOnly ? [] : assignedMissions.map((order) => order.id),
+  );
+  const inRescue = sorted.filter(
+    (order) =>
+      (order.status === 'cho-nhan' || order.status === 'dang-cuu-ho') &&
+      !missionIds.has(order.id),
+  );
+  const processed = sorted.filter(
+    (order) => order.status !== 'cho-nhan' && order.status !== 'dang-cuu-ho',
+  );
+  const quoted = demoHasOrders
+    ? quoteOrders
+        .filter((order) => order.quoteStatus === 'da-bao-gia' || order.quoteStatus === 'tu-choi')
+        .sort(byUpdatedAtDesc)
+    : [];
   const filterActive = isFilterActive(appliedFilter, false);
   const activeFilterCount = countActiveFilterCriteria(appliedFilter, false);
 
-  const subtitle = (() => {
-    if (!demoHasOrders) return 'Tất cả đơn cứu hộ đã và đang xử lý';
-    if (isQuoteOnly) {
-      if (filterActive) {
-        return `${sorted.length}/${roleOrders.length} đơn phù hợp bộ lọc`;
-      }
-      return 'Xem đơn của đơn vị · có thể đổi tài xế';
-    }
-    if (activeJob) return 'Đang xử lý 1 đơn · xem trên tab Cứu hộ';
-    if (filterActive) {
-      return `${sorted.length}/${roleOrders.length} đơn phù hợp bộ lọc`;
-    }
-    if (assignedMissions.length > 0) {
-      return `${assignedMissions.length} đơn chờ · ${sorted.length} đơn tổng`;
-    }
-    return 'Tất cả đơn cứu hộ đã và đang xử lý';
-  })();
+  const setSegment = (next: ManageSegment) => {
+    setSearchParams(next === 'rescue' ? { segment: 'rescue' } : { segment: 'quoted' }, {
+      replace: true,
+    });
+  };
 
   const handleAccept = (id: string) => {
     const order = orders.find((item) => item.id === id);
@@ -154,32 +182,79 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     navigate(`/orders/${order.id}`);
   };
 
+  const rescueEmpty =
+    assignedMissions.length === 0 && inRescue.length === 0 && processed.length === 0;
+
   return (
     <MainShell>
       <div className="grab-activity">
-        <header className="grab-page-header grab-page-header--with-action">
-          <div className="grab-page-header__main">
-            <h1>Hoạt động</h1>
-            <p>{subtitle}</p>
-          </div>
-          {onOpenFilter && (
-            <button
-              type="button"
-              className={`grab-page-header__filter${filterActive ? ' grab-page-header__filter--active' : ''}`}
-              onClick={onOpenFilter}
-              aria-label="Bộ lọc đơn cứu hộ"
-            >
-              <FilterIcon />
-              {filterActive && (
-                <span className="grab-page-header__filter-badge" aria-hidden>
-                  {activeFilterCount}
-                </span>
+        <div className="manage-top">
+          <header className="grab-page-header grab-page-header--with-action">
+            <div className="grab-page-header__main">
+              <h1>Quản lý đơn</h1>
+            </div>
+            <div className="grab-page-header__actions">
+              <button
+                type="button"
+                className="wf-create-btn"
+                onClick={() => navigate('/manage/new')}
+              >
+                <Plus size={16} strokeWidth={2.25} />
+                Tạo đơn
+              </button>
+              {segment === 'rescue' && onOpenFilter && (
+                <button
+                  type="button"
+                  className={`grab-page-header__filter${filterActive ? ' grab-page-header__filter--active' : ''}`}
+                  onClick={onOpenFilter}
+                  aria-label="Bộ lọc đơn cứu hộ"
+                >
+                  <FilterIcon />
+                  {filterActive && (
+                    <span className="grab-page-header__filter-badge" aria-hidden>
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
               )}
-            </button>
-          )}
-        </header>
+            </div>
+          </header>
 
-        {filterActive && (
+          {showQuoted && (
+            <div className="quote-segment" role="tablist" aria-label="Nhóm đơn cứu hộ">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={segment === 'quoted'}
+                className={`quote-segment__btn ${segment === 'quoted' ? 'quote-segment__btn--on' : ''}`}
+                onClick={() => setSegment('quoted')}
+              >
+                <span className="quote-segment__label">Báo giá</span>
+                {quoted.length > 0 && (
+                  <span className="quote-segment__badge quote-segment__badge--muted">
+                    {quoted.length}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={segment === 'rescue'}
+                className={`quote-segment__btn ${segment === 'rescue' ? 'quote-segment__btn--on' : ''}`}
+                onClick={() => setSegment('rescue')}
+              >
+                <span className="quote-segment__label">Cứu hộ</span>
+                {assignedMissions.length + inRescue.length > 0 && (
+                  <span className="quote-segment__badge">
+                    {assignedMissions.length + inRescue.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {segment === 'rescue' && filterActive && (
           <div className="grab-activity__filter-bar">
             <p className="grab-activity__filter-summary">
               Đang lọc theo {activeFilterCount} tiêu chí
@@ -194,25 +269,40 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
           </div>
         )}
 
-        {!isQuoteOnly && !readyForRescue && (
+        {segment === 'rescue' && !isQuoteOnly && !readyForRescue && (
           <div className="dls-alert-inline mission-home__banner" role="status">
             Bạn đang tạm nghỉ — bật sẵn sàng trong mục Tài khoản khi có thể đi cứu hộ.
           </div>
         )}
 
-        {isQuoteOnly && (
+        {segment === 'rescue' && isQuoteOnly && (
           <div className="dls-alert-inline mission-home__banner mission-home__banner--info" role="status">
             Chế độ chỉ xem — bạn có thể xem đơn của đơn vị và đổi tài xế khi cần.
           </div>
         )}
 
         <div className="grab-activity__scroll">
-          {!isQuoteOnly && assignedMissions.length > 0 && (
+          {segment === 'quoted' && quoted.length === 0 && (
+            <EmptyState
+              title="Chưa có báo giá nào"
+              hint="Sau khi gửi báo giá, đơn sẽ hiện tại đây."
+              actionLabel={driverRole === 'rescue-only' ? undefined : 'Mở hàng chờ báo giá'}
+              onAction={
+                driverRole === 'rescue-only' ? undefined : () => navigate('/quotes')
+              }
+            />
+          )}
+
+          {segment === 'quoted' && quoted.length > 0 && (
+            <div className="quote-history-list manage-quoted-list">
+              {quoted.map((order) => (
+                <QuoteHistoryRow key={order.id} order={order} />
+              ))}
+            </div>
+          )}
+
+          {segment === 'rescue' && !isQuoteOnly && assignedMissions.length > 0 && (
             <section className="mission-home__section" aria-label="Nhiệm vụ được giao">
-              <div className="mission-home__section-head">
-                <h2>Được giao</h2>
-                <span className="mission-home__count">{assignedMissions.length}</span>
-              </div>
               <div className="mission-home__list">
                 {assignedMissions.map((order) => (
                   <MissionTaskCard
@@ -230,36 +320,48 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
             </section>
           )}
 
-          <section className="grab-activity__section" aria-label="Danh sách đơn">
-            <div className="mission-home__section-head">
-              <h2>{listTitle}</h2>
-              {sorted.length > 0 && (
-                <span className="mission-home__count">{sorted.length}</span>
-              )}
-            </div>
+          {segment === 'rescue' && inRescue.length > 0 && (
+            <section className="grab-activity__section" aria-label="Đơn đang cứu hộ">
+              <div className="grab-activity__list">
+                {inRescue.map((order) => (
+                  <ActivityOrderRow
+                    key={order.id}
+                    order={order}
+                    onClick={() => openOrder(order)}
+                    canAssign={canAssignToOther && canReassignOrder(order)}
+                    onAssign={() => setAssignId(order.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-            <div className="grab-activity__list">
-              {sorted.map((order) => (
-                <ActivityOrderRow
-                  key={order.id}
-                  order={order}
-                  onClick={() => openOrder(order)}
-                  canAssign={canAssignToOther && canReassignOrder(order)}
-                  onAssign={() => setAssignId(order.id)}
-                />
-              ))}
-              {sorted.length === 0 && (
-                <EmptyState
-                  title={filterActive ? 'Không có đơn phù hợp' : 'Chưa có hoạt động'}
-                  hint={
-                    filterActive
-                      ? 'Thử đổi ngày tạo, biển số hoặc trạng thái trong bộ lọc.'
-                      : 'Đơn cứu hộ sẽ hiển thị tại đây sau khi được phân công.'
-                  }
-                />
-              )}
-            </div>
-          </section>
+          {segment === 'rescue' && processed.length > 0 && (
+            <section className="grab-activity__section" aria-label="Đơn đã xử lý">
+              <div className="grab-activity__list">
+                {processed.map((order) => (
+                  <ActivityOrderRow
+                    key={order.id}
+                    order={order}
+                    onClick={() => openOrder(order)}
+                    canAssign={canAssignToOther && canReassignOrder(order)}
+                    onAssign={() => setAssignId(order.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {segment === 'rescue' && rescueEmpty && (
+            <EmptyState
+              title={filterActive ? 'Không có đơn phù hợp' : 'Chưa có đơn đang cứu hộ'}
+              hint={
+                filterActive
+                  ? 'Thử đổi ngày tạo, biển số hoặc trạng thái trong bộ lọc.'
+                  : 'Đơn sẽ hiện tại đây khi được phân công hoặc khi bạn tạo đơn mới.'
+              }
+            />
+          )}
         </div>
       </div>
 

@@ -247,7 +247,7 @@ export const DlsChip: React.FC<{
     onClick={onClick}
   >
     {icon}
-    {label}
+    <span className="dls-chip__label">{label}</span>
     {badge != null && badge > 0 && <span className="dls-chip-badge">{badge}</span>}
   </button>
 );

@@ -7,12 +7,15 @@ interface RescuePhotosSectionProps {
   title?: string;
   /** Hide section title and per-group header (dot, label, count) — e.g. báo giá */
   compact?: boolean;
+  /** Ảnh nằm thẳng trong nội dung, không bọc thẻ nền riêng */
+  bare?: boolean;
 }
 
 const RescuePhotosSection: React.FC<RescuePhotosSectionProps> = ({
   photos,
   title = 'Hình ảnh cứu hộ',
   compact = false,
+  bare = false,
 }) => {
   const [lightbox, setLightbox] = React.useState<{ src: string; label: string } | null>(null);
 
@@ -26,7 +29,7 @@ const RescuePhotosSection: React.FC<RescuePhotosSectionProps> = ({
   return (
     <>
       <section
-        className={`order-detail-photos${compact ? ' order-detail-photos--compact' : ''}`}
+        className={`order-detail-photos${compact ? ' order-detail-photos--compact' : ''}${bare ? ' order-detail-photos--bare' : ''}`}
         aria-label={title}
       >
         {!compact && <p className="order-detail-photos__title">{title}</p>}

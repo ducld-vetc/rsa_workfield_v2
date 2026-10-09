@@ -378,7 +378,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
         message={
           driverRole === 'quote-only'
             ? 'Khách hàng sẽ xem xét báo giá của bạn.'
-            : 'Đơn chuyển sang tab Hoạt động khi khách chấp nhận.'
+            : 'Đơn đã báo giá nằm trong mục Đơn. Khi khách chấp nhận, đơn chuyển sang Đang cứu hộ.'
         }
         confirmLabel="OK"
         cancelLabel=""

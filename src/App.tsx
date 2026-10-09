@@ -10,6 +10,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AccountLockedPage from './pages/AccountLockedPage';
 import ActivityPage from './pages/ActivityPage';
+import CreateRescueOrderPage from './pages/CreateRescueOrderPage';
 import CameraPage from './pages/CameraPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ExtraCostsPage from './pages/ExtraCostsPage';
@@ -142,7 +143,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/activity"
+          path="/manage"
           element={
             <ProtectedRoute>
               <RoleGuard allow={['quote-rescue', 'rescue-only', 'quote-only']}>
@@ -156,6 +157,15 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/manage/new"
+          element={
+            <ProtectedRoute>
+              <CreateRescueOrderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/activity" element={<Navigate to="/manage" replace />} />
         <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
         <Route path="/jobs/:id" element={<ProtectedRoute><JobNavigationPage /></ProtectedRoute>} />
         <Route path="/jobs/:id/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
@@ -240,7 +250,7 @@ const App: React.FC = () => (
           </div>
         </div>
         <p className="dm-preview-hint">
-          Preview — Workfield Driver · Báo giá + Cứu hộ · Dữ liệu mẫu
+          Preview — Workfield · Cứu hộ · Báo giá · Quản lý đơn · Dữ liệu mẫu
         </p>
       </div>
     </AppProvider>

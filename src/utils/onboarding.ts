@@ -32,7 +32,7 @@ const STEP_OPERATE: OnboardingStep = {
 const STEP_TRACK: OnboardingStep = {
   id: 'track',
   title: 'Theo dõi đơn',
-  caption: 'Sau báo giá, xem kết quả ở Hoạt động.',
+  caption: 'Xem đơn đã báo giá và đơn đang cứu hộ trong mục Đơn.',
 };
 
 export function getOnboardingSteps(role: DriverRole): OnboardingStep[] {

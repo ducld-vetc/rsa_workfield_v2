@@ -1,6 +1,6 @@
 export type DriverRole = 'quote-rescue' | 'quote-only' | 'rescue-only';
 
-export type QuoteStatus = 'cho-bao-gia' | 'da-bao-gia';
+export type QuoteStatus = 'cho-bao-gia' | 'da-bao-gia' | 'tu-choi';
 
 export type QuoteChipFilter = 'tat-ca' | QuoteStatus;
 
@@ -13,7 +13,11 @@ export interface QuoteOrder {
   address: string;
   towDestination?: string;
   timestamp: string;
+  /** Mốc cập nhật gần nhất, dùng để sắp danh sách */
+  updatedAt?: number;
   serviceName: string;
+  /** Các dịch vụ đã báo giá. Không có thì dùng serviceName. */
+  services?: string[];
   packageTag: 'Trong gói' | 'Ngoài gói';
   serviceMode: 'Cẩu kéo' | 'Hỗ trợ tại chỗ';
   distanceKm: number;
@@ -43,6 +47,7 @@ export const DRIVER_ROLE_LABELS: Record<DriverRole, string> = {
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   'cho-bao-gia': 'Chờ báo giá',
   'da-bao-gia': 'Đã báo giá',
+  'tu-choi': 'Từ chối',
 };
 
 export const QUOTE_CHIP_FILTERS: { id: QuoteChipFilter; label: string }[] = [
@@ -116,6 +121,30 @@ export interface OrderAssignment {
   isActive?: boolean;
 }
 
+export interface FieldOrderInput {
+  plate: string;
+  brand: string;
+  model: string;
+  address: string;
+  towDestination?: string;
+  serviceMode: RescueServiceMode;
+  condition: string;
+  customerName: string;
+  customerPhone: string;
+  /** Dịch vụ khách chọn trên sheet */
+  services?: string[];
+  /** Cao tốc / Đô thị / Vùng nông thôn */
+  locationType?: string;
+  incidentPhotos?: string[];
+  rescueDriverId?: string;
+  rescueDriverName?: string;
+  rescueVehiclePlate?: string;
+  /** Số tiền cứu hộ, đã gồm thuế */
+  estimatedTotal?: number;
+  pickupCoords?: GeoPoint;
+  towCoords?: GeoPoint;
+}
+
 export interface RescueOrder {
   id: string;
   plate: string;
@@ -124,6 +153,8 @@ export interface RescueOrder {
   address: string;
   towDestination?: string;
   timestamp: string;
+  /** Mốc cập nhật gần nhất, dùng để sắp danh sách */
+  updatedAt?: number;
   services: string;
   serviceLines?: ServiceLine[];
   status: OrderStatus;

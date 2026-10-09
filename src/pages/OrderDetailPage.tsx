@@ -71,7 +71,7 @@ const OrderDetailPage: React.FC = () => {
 
   const goBack = () => {
     if (window.history.length > 1) navigate(-1);
-    else navigate('/activity');
+    else navigate('/manage');
   };
 
   if (!order) {
@@ -116,7 +116,7 @@ const OrderDetailPage: React.FC = () => {
   const handleReject = (reason: string) => {
     updateOrder(order.id, { status: 'tu-choi', acceptCountdown: undefined });
     setRejectOpen(false);
-    navigate('/activity');
+    navigate('/manage');
     void reason;
   };
 

@@ -1129,11 +1129,26 @@ button.quote-photos-compact__item:active {
   flex-direction: column;
   gap: var(--dls-space-12);
   padding: 0 var(--dls-space-16) var(--dls-space-16);
-  border-top: 1px solid var(--dls-outline-subtle);
 }
 
 .quote-history-row__stops {
   margin: 0;
+}
+
+.quote-history-row__services p {
+  margin: 0 0 6px;
+  font-size: var(--dls-text-xs);
+  font-weight: 600;
+  line-height: var(--dls-lh-xs);
+  color: var(--dls-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.quote-history-row__services span {
+  font-size: var(--dls-text-sm);
+  line-height: var(--dls-lh-sm);
+  color: var(--dls-primary);
 }
 
 .quote-history-row__type {

@@ -946,6 +946,17 @@ select {
   max-width: 260px;
 }
 
+.dm-empty-state__action {
+  margin-top: var(--dls-space-16);
+  border: none;
+  background: none;
+  color: var(--dls-brand);
+  font-family: var(--dls-font);
+  font-size: var(--dls-text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .dm-empty {
   text-align: center;
   padding: 48px 16px;

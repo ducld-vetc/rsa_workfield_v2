@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Briefcase, CalendarDays, Siren, User } from 'lucide-react';
+import { Bell, CalendarDays, ClipboardList, Siren, User } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { hasRescueTabLiveJob } from '../utils/orderHandler';
 
@@ -34,20 +34,20 @@ const BottomTabBar: React.FC = () => {
             icon: CalendarDays,
             badge: pendingQuotes,
           },
-          { path: '/activity', label: 'Hoạt động', icon: Briefcase },
+          { path: '/manage', label: 'Đơn', icon: ClipboardList },
           { path: '/notifications', label: 'Thông báo', icon: Bell, badge: unread },
           { path: '/settings', label: 'Tài khoản', icon: User },
         ]
       : driverRole === 'quote-only'
         ? [
             { path: '/quotes', label: 'Báo giá', icon: CalendarDays, badge: pendingQuotes },
-            { path: '/activity', label: 'Hoạt động', icon: Briefcase },
+            { path: '/manage', label: 'Đơn', icon: ClipboardList },
             { path: '/notifications', label: 'Thông báo', icon: Bell, badge: unread },
             { path: '/settings', label: 'Tài khoản', icon: User },
           ]
         : [
             { path: '/home', label: 'Cứu hộ', icon: Siren, live: hasActiveRescue },
-            { path: '/activity', label: 'Hoạt động', icon: Briefcase },
+            { path: '/manage', label: 'Đơn', icon: ClipboardList },
             { path: '/notifications', label: 'Thông báo', icon: Bell, badge: unread },
             { path: '/settings', label: 'Tài khoản', icon: User },
           ];

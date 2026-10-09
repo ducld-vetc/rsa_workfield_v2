@@ -2,7 +2,7 @@ import React from 'react';
 import {
   BatteryFull,
   Bell,
-  Briefcase,
+  ClipboardList,
   CalendarDays,
   Camera,
   FileText,
@@ -31,7 +31,7 @@ type TabId = 'home' | 'quotes' | 'activity' | 'notifications' | 'settings';
 const GUIDE_TABS: { id: TabId; label: string; icon: React.FC<{ size?: number; strokeWidth?: number }> }[] = [
   { id: 'home', label: 'Cứu hộ', icon: Siren },
   { id: 'quotes', label: 'Báo giá', icon: CalendarDays },
-  { id: 'activity', label: 'Hoạt động', icon: Briefcase },
+  { id: 'activity', label: 'Đơn', icon: ClipboardList },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
   { id: 'settings', label: 'Tài khoản', icon: User },
 ];
@@ -145,7 +145,7 @@ const AcceptScene: React.FC = () => {
         <div className="dm-shell__body">
           <div className="grab-activity">
             <header className="grab-page-header">
-              <h1>Hoạt động</h1>
+              <h1>Quản lý đơn</h1>
               <p>1 đơn chờ nhận</p>
             </header>
             <div className="grab-activity__scroll">
@@ -286,13 +286,13 @@ const TrackScene: React.FC = () => {
         <div className="dm-shell__body">
           <div className="grab-activity">
             <header className="grab-page-header">
-              <h1>Hoạt động</h1>
-              <p>Xem đơn của đơn vị · có thể đổi tài xế</p>
+              <h1>Quản lý đơn</h1>
+              <p>Đơn đã báo giá và đơn đang cứu hộ</p>
             </header>
             <div className="grab-activity__scroll">
               <section className="grab-activity__section" aria-label="Danh sách đơn">
                 <div className="mission-home__section-head">
-                  <h2>Tất cả đơn</h2>
+                  <h2>Đang cứu hộ</h2>
                   <span className="mission-home__count">2</span>
                 </div>
                 <div className="grab-activity__list">

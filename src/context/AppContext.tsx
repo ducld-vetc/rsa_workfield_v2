@@ -3,6 +3,7 @@ import { MOCK_NOTIFICATIONS, MOCK_ORDERS } from '../data/mockOrders';
 import { MOCK_QUOTE_ORDERS } from '../data/mockQuoteOrders';
 import {
   DriverRole,
+  FieldOrderInput,
   FilterState,
   NotificationItem,
   QuoteOrder,
@@ -41,6 +42,7 @@ interface AppContextValue {
   getQuoteOrder: (id: string) => QuoteOrder | undefined;
   submitQuote: (id: string, data: Partial<QuoteOrder>) => void;
   skipQuote: (id: string) => void;
+  createFieldOrder: (input: FieldOrderInput) => { id: string; started: boolean };
   appliedFilter: FilterState;
   setAppliedFilter: (f: FilterState) => void;
   emptyFilter: FilterState;
@@ -60,11 +62,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [appliedFilter, setAppliedFilter] = React.useState<FilterState>(EMPTY_FILTER);
 
   const updateOrder = (id: string, patch: Partial<RescueOrder>) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, ...patch, updatedAt: Date.now() } : o)),
+    );
   };
 
   const updateQuoteOrder = (id: string, patch: Partial<QuoteOrder>) => {
-    setQuoteOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+    setQuoteOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, ...patch, updatedAt: Date.now() } : o)),
+    );
   };
 
   const getOrder = (id: string) => orders.find((o) => o.id === id);
@@ -79,6 +85,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const skipQuote = (id: string) => {
     setSkippedQuoteIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
+
+  const createFieldOrder = (input: FieldOrderInput) => {
+    const now = new Date();
+    const id = `field-${now.getTime()}`;
+    const hasLiveJob = orders.some(
+      (order) =>
+        order.status === 'dang-cuu-ho' && order.activeHandlerDriverId === currentDriverId,
+    );
+    const handlerId = input.rescueDriverId || currentDriverId;
+    const handlerName = input.rescueDriverName || currentDriverName;
+    const assignedToMe = handlerId === currentDriverId;
+    const started = driverRole !== 'quote-only' && assignedToMe && !hasLiveJob;
+    const serviceNames =
+      input.services && input.services.length > 0
+        ? input.services
+        : [input.serviceMode === 'Cẩu kéo' ? 'Kéo xe' : 'Hỗ trợ tại chỗ'];
+    const services = serviceNames.join('; ');
+    const stamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00, ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    const order: RescueOrder = {
+      id,
+      orderCode: `WF-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getTime()).slice(-4)}`,
+      plate: input.plate.trim().toUpperCase(),
+      brand: input.brand.trim() || 'Chưa rõ',
+      model: input.model.trim() || 'Chưa rõ',
+      address: input.address.trim(),
+      towDestination: input.towDestination?.trim() || undefined,
+      pickupCoords: input.pickupCoords,
+      towCoords: input.towCoords,
+      timestamp: stamp,
+      updatedAt: now.getTime(),
+      services,
+      serviceLines: serviceNames.map((name) => ({
+        name,
+        value: /kéo/i.test(name) ? 'Theo điểm kéo' : '1 lần',
+      })),
+      status: started ? 'dang-cuu-ho' : 'cho-nhan',
+      jobStage: started ? 'da-nhan' : 'cho-nhan',
+      monthGroup: `Tháng ${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`,
+      condition: input.condition.trim() || serviceNames[0],
+      conditionDescription: [input.locationType, input.condition.trim()]
+        .filter(Boolean)
+        .join(' · ') || undefined,
+      incidentPhotos: input.incidentPhotos,
+      customerName: input.customerName.trim() || undefined,
+      customerPhone: input.customerPhone.trim() || undefined,
+      estimatedTotal: input.estimatedTotal,
+      priceConfirmed: input.estimatedTotal != null,
+      delegatedToDriverId: input.rescueDriverId,
+      delegatedToDriverName: input.rescueDriverName,
+      delegatedVehiclePlate: input.rescueVehiclePlate,
+      activeHandlerDriverId: started ? handlerId : undefined,
+      activeHandlerDriverName: started ? handlerName : undefined,
+      assignments: [
+        {
+          driverId: handlerId,
+          driverName: handlerName,
+          status: started ? 'dang-cuu-ho' : 'cho-nhan',
+          isActive: started,
+        },
+      ],
+    };
+
+    setOrders((prev) => [order, ...prev]);
+    return { id, started };
   };
 
   const submitQuote = (id: string, data: Partial<QuoteOrder>) => {
@@ -104,6 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             address: quote.address,
             towDestination: quote.towDestination,
             timestamp: quote.timestamp,
+            updatedAt: Date.now(),
             services: quote.serviceName,
             status: 'cho-nhan',
             jobStage: 'cho-nhan',
@@ -145,6 +217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getQuoteOrder,
         submitQuote,
         skipQuote,
+        createFieldOrder,
         appliedFilter,
         setAppliedFilter,
         emptyFilter: EMPTY_FILTER,

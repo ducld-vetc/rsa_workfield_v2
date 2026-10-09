@@ -133,6 +133,122 @@ export async function stampVideoFrame(
   return stampCanvas(video, width, height, meta);
 }
 
+export interface FieldPhotoStampMeta {
+  capturedAt: Date;
+  lat: number;
+  lng: number;
+  address: string;
+  photographer: string;
+}
+
+function wrapCanvasLine(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  const lines: string[] = [];
+  let current = '';
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (current && ctx.measureText(next).width > maxWidth) {
+      lines.push(current);
+      current = word;
+      return;
+    }
+    current = next;
+  });
+  if (current) lines.push(current);
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines);
+  const last = kept[maxLines - 1];
+  kept[maxLines - 1] = last.length > 1 ? `${last.slice(0, last.length - 1)}…` : '…';
+  return kept;
+}
+
+async function drawFieldStamp(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  meta: FieldPhotoStampMeta,
+): Promise<void> {
+  const scale = Math.max(width, height) / 1080;
+  const pad = 14 * scale;
+  const lineH = 20 * scale;
+  const blockW = Math.min(width - pad * 2, 420 * scale);
+  const textW = blockW - pad * 2;
+  ctx.font = `600 ${13 * scale}px ${getComputedStyle(document.documentElement).fontFamily || 'system-ui'}`;
+  const time = meta.capturedAt.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const rows = [
+    `Địa chỉ: ${meta.address || 'Chưa rõ'}`,
+    `Tọa độ: ${meta.lat.toFixed(5)}, ${meta.lng.toFixed(5)}`,
+    `Thời gian: ${time}`,
+    `Người chụp: ${meta.photographer || 'Chưa rõ'}`,
+  ];
+  const lines = rows.flatMap((row, index) => wrapCanvasLine(ctx, row, textW, index === 0 ? 2 : 1));
+  const blockH = pad * 2 + lines.length * lineH;
+  const x = pad;
+  const y = height - blockH - pad;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(9, 27, 55, 0.72)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, blockW, blockH, 12 * scale);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'top';
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x + pad, y + pad + index * lineH, textW);
+  });
+  ctx.restore();
+}
+
+async function stampFieldCanvas(
+  source: CanvasImageSource,
+  width: number,
+  height: number,
+  meta: FieldPhotoStampMeta,
+): Promise<string> {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(source, 0, 0, width, height);
+  await drawFieldStamp(ctx, width, height, meta);
+  return canvas.toDataURL('image/jpeg', 0.9);
+}
+
+export async function stampFieldImageFile(file: File, meta: FieldPhotoStampMeta): Promise<string> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = objectUrl;
+    });
+    return stampFieldCanvas(img, img.naturalWidth, img.naturalHeight, meta);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+export async function stampFieldVideoFrame(
+  video: HTMLVideoElement,
+  meta: FieldPhotoStampMeta,
+): Promise<string> {
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) throw new Error('Camera not ready');
+  return stampFieldCanvas(video, width, height, meta);
+}
+
 export function getGeoPosition(
   fallback: { lat: number; lng: number },
 ): Promise<{ lat: number; lng: number }> {

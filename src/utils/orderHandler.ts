@@ -417,7 +417,7 @@ export interface RescueEmptyCopy {
   title: string;
   description: string;
   cta: string;
-  action: 'go-online' | 'activity';
+  action: 'go-online' | 'manage';
 }
 
 export function getRescueEmptyCopy(
@@ -441,7 +441,7 @@ export function getRescueEmptyCopy(
     title: 'Sẵn sàng đi cứu hộ',
     description:
       'Đang chờ đơn mới. Bản đồ và tiến trình cứu hộ sẽ hiển thị tại đây khi bạn nhận đơn.',
-    cta: pendingCount > 0 ? `Xem ${pendingCount} đơn chờ báo giá` : 'Mở tab Hoạt động',
-    action: 'activity',
+    cta: pendingCount > 0 ? `Xem ${pendingCount} đơn chờ nhận` : 'Xem đơn cứu hộ',
+    action: 'manage',
   };
 }
