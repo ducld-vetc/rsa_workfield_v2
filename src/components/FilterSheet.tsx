@@ -6,8 +6,12 @@ import {
   DlsSheetHeader,
   DlsTextField,
 } from '@dls/components';
+import { MOCK_QUOTE_DRIVERS, MOCK_RESCUE_VEHICLES } from '../data/mockQuoteResources';
 import {
+  CUSTOMER_KIND_LABELS,
+  CustomerKind,
   FilterState,
+  ORDER_KIND_FILTERS,
   OrderStatus,
   QUOTE_FILTER_STATUSES,
   QUOTE_STATUS_LABELS,
@@ -71,6 +75,13 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
     onChange({ ...value, statuses: Array.from(set) });
   };
 
+  const toggleList = (key: 'customerTypes' | 'orderKinds' | 'driverIds' | 'vehiclePlates', id: string) => {
+    const set = new Set(value[key]);
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    onChange({ ...value, [key]: Array.from(set) });
+  };
+
   return (
     <div className="dls-sheet-overlay" role="dialog" aria-modal aria-label="Bộ lọc">
       <div className="dls-sheet">
@@ -114,6 +125,62 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
                 ))}
               </div>
             </div>
+          )}
+          {mode === 'rescue' && (
+            <>
+              <div className="dls-filter-section">
+                <span className="dls-label">Loại khách hàng</span>
+                <div className="dls-chip-wrap">
+                  {(Object.keys(CUSTOMER_KIND_LABELS) as CustomerKind[]).map((kind) => (
+                    <DlsChip
+                      key={kind}
+                      label={CUSTOMER_KIND_LABELS[kind]}
+                      selected={value.customerTypes.includes(kind)}
+                      onClick={() => toggleList('customerTypes', kind)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="dls-filter-section">
+                <span className="dls-label">Loại đơn</span>
+                <div className="dls-chip-wrap">
+                  {ORDER_KIND_FILTERS.map((kind) => (
+                    <DlsChip
+                      key={kind.id}
+                      label={kind.label}
+                      selected={value.orderKinds.includes(kind.id)}
+                      onClick={() => toggleList('orderKinds', kind.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="dls-filter-section">
+                <span className="dls-label">Tài xế</span>
+                <div className="dls-chip-wrap">
+                  {MOCK_QUOTE_DRIVERS.map((driver) => (
+                    <DlsChip
+                      key={driver.id}
+                      label={driver.name}
+                      selected={value.driverIds.includes(driver.id)}
+                      onClick={() => toggleList('driverIds', driver.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="dls-filter-section">
+                <span className="dls-label">Xe cứu hộ</span>
+                <div className="dls-chip-wrap">
+                  {MOCK_RESCUE_VEHICLES.map((vehicle) => (
+                    <DlsChip
+                      key={vehicle.id}
+                      label={vehicle.plate}
+                      selected={value.vehiclePlates.includes(vehicle.plate)}
+                      onClick={() => toggleList('vehiclePlates', vehicle.plate)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
           )}
           <div className="dls-filter-section">
             <span className="dls-label">Trạng thái</span>

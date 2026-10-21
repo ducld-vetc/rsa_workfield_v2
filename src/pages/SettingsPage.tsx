@@ -39,6 +39,38 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
         </div>
 
         {(driverRole === 'quote-rescue' || driverRole === 'rescue-only') && (
+          <section className="grab-settings__section" aria-label="Chỉ số cá nhân">
+            <p className="grab-settings__stats-title">Chỉ số tháng này</p>
+            <div className="grab-settings__stats">
+              <article className="grab-settings-stat">
+                <p>Số chuyến cứu hộ</p>
+                <strong>48</strong>
+              </article>
+              <article className="grab-settings-stat">
+                <p>Doanh thu cứu hộ</p>
+                <strong>86,4 triệu</strong>
+              </article>
+              <article className="grab-settings-stat">
+                <p>Số sao đánh giá</p>
+                <strong>4,8</strong>
+              </article>
+              <article className="grab-settings-stat">
+                <p>SLA trung bình</p>
+                <strong>16 phút</strong>
+              </article>
+              <article className="grab-settings-stat">
+                <p>Tỷ lệ nhận đơn</p>
+                <strong>92%</strong>
+              </article>
+              <article className="grab-settings-stat">
+                <p>Km đã chạy</p>
+                <strong>612 km</strong>
+              </article>
+            </div>
+          </section>
+        )}
+
+        {(driverRole === 'quote-rescue' || driverRole === 'rescue-only') && (
           <section className="grab-settings__section">
             <div className="grab-settings-card">
               <DlsListRow
@@ -75,7 +107,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           </div>
         </section>
 
-        <p className="grab-settings__version">Workfield v1.0.0</p>
+        <p className="grab-settings__version">VETC Cứu hộ v1.0.0</p>
       </div>
 
       <ConfirmDialog

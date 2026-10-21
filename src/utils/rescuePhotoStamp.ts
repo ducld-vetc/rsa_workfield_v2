@@ -1,52 +1,31 @@
-import vetcLogoUrl from '../assets/vetc-logo.png';
-
 export interface PhotoStampMeta {
   capturedAt: Date;
   lat: number;
   lng: number;
+  address: string;
+  photographer: string;
 }
 
 export interface PhotoStampLabels {
-  clock: string;
-  datetime: string;
+  time: string;
+  seconds: string;
+  date: string;
+  address: string;
   coords: string;
-}
-
-let logoImage: HTMLImageElement | null = null;
-
-function loadLogo(): Promise<HTMLImageElement> {
-  if (logoImage?.complete) return Promise.resolve(logoImage);
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      logoImage = img;
-      resolve(img);
-    };
-    img.onerror = reject;
-    img.src = vetcLogoUrl;
-  });
+  photographer: string;
 }
 
 export function formatStampLabels(meta: PhotoStampMeta): PhotoStampLabels {
-  const { capturedAt, lat, lng } = meta;
-  const clock = capturedAt.toLocaleTimeString('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-  const datetime = capturedAt.toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const latDir = lat >= 0 ? 'N' : 'S';
-  const lngDir = lng >= 0 ? 'E' : 'W';
-  const coords = `${Math.abs(lat).toFixed(4)}°${latDir}, ${Math.abs(lng).toFixed(4)}°${lngDir}`;
-  return { clock, datetime, coords };
+  const capturedAt = meta.capturedAt;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return {
+    time: `${pad(capturedAt.getHours())}:${pad(capturedAt.getMinutes())}`,
+    seconds: pad(capturedAt.getSeconds()),
+    date: `${pad(capturedAt.getDate())}/${pad(capturedAt.getMonth() + 1)}/${capturedAt.getFullYear()}`,
+    address: meta.address.trim() || 'Chưa rõ',
+    coords: `${meta.lat.toFixed(5)}, ${meta.lng.toFixed(5)}`,
+    photographer: meta.photographer.trim() || 'Chưa rõ',
+  };
 }
 
 async function drawStamp(
@@ -56,37 +35,58 @@ async function drawStamp(
   meta: PhotoStampMeta,
 ): Promise<void> {
   const labels = formatStampLabels(meta);
-  const logo = await loadLogo();
   const scale = Math.max(width, height) / 1080;
-  const pad = 12 * scale;
-  const logoW = 56 * scale;
-  const logoH = (logo.height / logo.width) * logoW;
-  const lineH = 18 * scale;
-  const blockW = Math.min(width * 0.72, 320 * scale);
-  const blockH = pad * 2 + logoH + lineH * 3 + 8 * scale;
-  const x = pad;
-  const y = height - blockH - pad;
+  const pad = 20 * scale;
+  const timeSize = 64 * scale;
+  const smallSize = 18 * scale;
+  const metaSize = 16 * scale;
+  const font = getComputedStyle(document.documentElement).fontFamily || 'system-ui';
+  const textW = width - pad * 2;
 
   ctx.save();
-  ctx.fillStyle = 'rgba(9, 27, 55, 0.62)';
-  ctx.beginPath();
-  const r = 10 * scale;
-  ctx.roundRect(x, y, blockW, blockH, r);
-  ctx.fill();
+  ctx.font = `500 ${metaSize}px ${font}`;
+  const addressLines = wrapCanvasLine(ctx, labels.address, textW, 2);
+  const detailLines = [labels.coords, labels.photographer];
+  const lineH = metaSize * 1.35;
+  const belowH = (addressLines.length + detailLines.length) * lineH + 8 * scale;
+  const y = height - pad - timeSize - belowH;
 
-  ctx.drawImage(logo, x + pad, y + pad, logoW, logoH);
-
-  const textX = x + pad + logoW + 10 * scale;
-  const textY = y + pad + logoH * 0.15;
   ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+  ctx.shadowBlur = 6 * scale;
+  ctx.shadowOffsetY = scale;
   ctx.textBaseline = 'top';
-  ctx.font = `700 ${14 * scale}px ${getComputedStyle(document.documentElement).fontFamily || 'system-ui'}`;
-  ctx.fillText('VETC RSA', textX, textY);
 
-  ctx.font = `600 ${12 * scale}px ${getComputedStyle(document.documentElement).fontFamily || 'system-ui'}`;
-  const lines = [labels.clock, labels.datetime, labels.coords];
-  lines.forEach((line, i) => {
-    ctx.fillText(line, x + pad, y + pad + logoH + 6 * scale + i * lineH);
+  ctx.font = `500 ${timeSize}px ${font}`;
+  ctx.fillText(labels.time, pad, y);
+  const timeW = ctx.measureText(labels.time).width;
+
+  ctx.font = `600 ${smallSize}px ${font}`;
+  const secondsX = pad + timeW + 8 * scale;
+  ctx.fillText(labels.seconds, secondsX, y + 8 * scale);
+  const secondsW = ctx.measureText(labels.seconds).width;
+
+  const barX = secondsX + secondsW + 12 * scale;
+  const barH = timeSize * 0.62;
+  const barY = y + (timeSize - barH) / 2;
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = '#f5c400';
+  ctx.fillRect(barX, barY, 3 * scale, barH);
+
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `600 ${smallSize}px ${font}`;
+  ctx.fillText(labels.date, barX + 14 * scale, y + timeSize * 0.22);
+
+  ctx.font = `500 ${metaSize}px ${font}`;
+  let lineY = y + timeSize + 8 * scale;
+  addressLines.forEach((line) => {
+    ctx.fillText(line, pad, lineY, textW);
+    lineY += lineH;
+  });
+  detailLines.forEach((line) => {
+    ctx.fillText(line, pad, lineY, textW);
+    lineY += lineH;
   });
   ctx.restore();
 }

@@ -293,6 +293,7 @@ const CreateRescueOrderPage: React.FC = () => {
       serviceMode,
       condition: condition.trim(),
       customerName: ownerName.trim(),
+      customerType: customerType === 'Doanh nghiệp' ? 'doanh-nghiep' : 'ca-nhan',
       customerPhone: phone.trim(),
       services,
       incidentPhotos: photos.map((item) => item.url),

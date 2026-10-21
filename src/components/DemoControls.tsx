@@ -18,6 +18,10 @@ const DemoControls: React.FC = () => {
     setCurrentDriverId,
     demoHasOrders,
     setDemoHasOrders,
+    locationGateOn,
+    setLocationGateOn,
+    poorConnection,
+    setPoorConnection,
   } = useApp();
 
   return (
@@ -72,6 +76,46 @@ const DemoControls: React.FC = () => {
             onClick={() => setDemoHasOrders(true)}
           >
             Có đơn
+          </button>
+        </div>
+      </div>
+
+      <div className="dm-demo-panel__block">
+        <span className="dm-demo-panel__label">Màn cấp quyền</span>
+        <div className="dm-demo-panel__toggle">
+          <button
+            type="button"
+            className={`dm-demo-panel__pill ${locationGateOn ? 'dm-demo-panel__pill--on' : ''}`}
+            onClick={() => setLocationGateOn(true)}
+          >
+            Bật
+          </button>
+          <button
+            type="button"
+            className={`dm-demo-panel__pill ${!locationGateOn ? 'dm-demo-panel__pill--on' : ''}`}
+            onClick={() => setLocationGateOn(false)}
+          >
+            Tắt
+          </button>
+        </div>
+      </div>
+
+      <div className="dm-demo-panel__block">
+        <span className="dm-demo-panel__label">Kết nối</span>
+        <div className="dm-demo-panel__toggle">
+          <button
+            type="button"
+            className={`dm-demo-panel__pill ${!poorConnection ? 'dm-demo-panel__pill--on' : ''}`}
+            onClick={() => setPoorConnection(false)}
+          >
+            Ổn định
+          </button>
+          <button
+            type="button"
+            className={`dm-demo-panel__pill ${poorConnection ? 'dm-demo-panel__pill--on' : ''}`}
+            onClick={() => setPoorConnection(true)}
+          >
+            Kém
           </button>
         </div>
       </div>

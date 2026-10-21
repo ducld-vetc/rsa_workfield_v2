@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
-import vetcLogoUrl from '../assets/vetc-logo.png';
+import { useApp } from '../context/AppContext';
 import {
   formatStampLabels,
   getGeoPosition,
@@ -30,6 +30,7 @@ const RescueCameraCapture: React.FC<RescueCameraCaptureProps> = ({
   const [error, setError] = React.useState<string | null>(null);
   const [capturing, setCapturing] = React.useState(false);
   const [savedFlash, setSavedFlash] = React.useState(false);
+  const { currentDriverName } = useApp();
   const [now, setNow] = React.useState(() => new Date());
   const [position, setPosition] = React.useState(() => getOrderPickup(order));
 
@@ -85,7 +86,13 @@ const RescueCameraCapture: React.FC<RescueCameraCaptureProps> = ({
     };
   }, [open]);
 
-  const stampMeta: PhotoStampMeta = { capturedAt: now, lat: position.lat, lng: position.lng };
+  const stampMeta: PhotoStampMeta = {
+    capturedAt: now,
+    lat: position.lat,
+    lng: position.lng,
+    address: order.address,
+    photographer: currentDriverName,
+  };
   const labels = formatStampLabels(stampMeta);
 
   const handleCapture = async () => {
@@ -99,6 +106,8 @@ const RescueCameraCapture: React.FC<RescueCameraCaptureProps> = ({
         capturedAt,
         lat: geo.lat,
         lng: geo.lng,
+        address: order.address,
+        photographer: currentDriverName,
       });
       const shouldClose = onCapture(dataUrl);
       if (shouldClose) {
@@ -138,13 +147,15 @@ const RescueCameraCapture: React.FC<RescueCameraCaptureProps> = ({
       </button>
 
       <div className="rescue-camera-live__stamp" aria-live="polite">
-        <img src={vetcLogoUrl} alt="" className="rescue-camera-live__logo" />
-        <div className="rescue-camera-live__stamp-text">
-          <span className="rescue-camera-live__brand">VETC RSA</span>
-          <span className="rescue-camera-live__clock">{labels.clock}</span>
-          <span>{labels.datetime}</span>
-          <span>{labels.coords}</span>
+        <div className="rescue-camera-live__clock">
+          <span className="rescue-camera-live__time">{labels.time}</span>
+          <span className="rescue-camera-live__seconds">{labels.seconds}</span>
+          <span className="rescue-camera-live__bar" aria-hidden="true" />
+          <span className="rescue-camera-live__date">{labels.date}</span>
         </div>
+        <p className="rescue-camera-live__line">{labels.address}</p>
+        <p className="rescue-camera-live__line">{labels.coords}</p>
+        <p className="rescue-camera-live__line">{labels.photographer}</p>
       </div>
 
       {savedFlash && (

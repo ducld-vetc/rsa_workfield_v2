@@ -90,6 +90,7 @@ const RescuePage: React.FC = () => {
     readyForRescue,
     setReadyForRescue,
     currentDriverId,
+    poorConnection,
   } = useApp();
   const [ratingOpen, setRatingOpen] = React.useState(false);
 
@@ -118,9 +119,12 @@ const RescuePage: React.FC = () => {
           <div className="rescue-empty__map">
             <RescueMap />
             {!isNotReady && (
-              <div className="rescue-empty__ready-pill" role="status">
+              <div
+                className={`rescue-empty__ready-pill${poorConnection ? ' rescue-empty__ready-pill--poor' : ''}`}
+                role="status"
+              >
                 <span className="rescue-empty__ready-pill-dot" aria-hidden />
-                Sẵn sàng nhận đơn
+                {poorConnection ? 'Kết nối yếu' : 'Sẵn sàng nhận đơn'}
               </div>
             )}
           </div>
@@ -187,6 +191,11 @@ const RescuePage: React.FC = () => {
       <div className="rescue-live">
         <div className="rescue-live__map">
           <RescueMap order={activeJob} />
+          {poorConnection && (
+            <p className="rescue-live__connection" role="status">
+              Kết nối yếu
+            </p>
+          )}
 
           <a
             className="rescue-live__cskh-btn"

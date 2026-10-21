@@ -30,6 +30,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     priceConfirmed: true,
     orderLine: 'cuu-ho',
     rescueChannel: 'vetc',
+    customerType: 'ca-nhan',
+    delegatedVehiclePlate: '29C-12345',
     quoteOrderId: 'q1',
     acceptCountdown: '09:00',
     respondBy: '10:45',
@@ -64,6 +66,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     priceConfirmed: true,
     orderLine: 'cuu-ho',
     rescueChannel: 'noi-bo',
+    customerType: 'ca-nhan',
+    delegatedVehiclePlate: '30H-88776',
     acceptCountdown: '05:30',
     respondBy: '11:00',
     assignments: [
@@ -101,6 +105,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     priceConfirmed: true,
     orderLine: 'cuu-ho',
     rescueChannel: 'vetc',
+    customerType: 'ca-nhan',
+    delegatedVehiclePlate: '51G-55443',
     activeHandlerDriverId: 'd2',
     activeHandlerDriverName: 'Trần Minh Tuấn',
     assignments: [
@@ -142,6 +148,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     priceConfirmed: true,
     orderLine: 'cuu-ho',
     rescueChannel: 'noi-bo',
+    customerType: 'ca-nhan',
+    delegatedVehiclePlate: '43A-22110',
     activeHandlerDriverId: 'd1',
     activeHandlerDriverName: 'Nguyễn Văn Hùng',
     assignments: [
@@ -177,6 +185,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     priceConfirmed: true,
     orderLine: 'cuu-ho',
     rescueChannel: 'vetc',
+    customerType: 'ca-nhan',
+    delegatedVehiclePlate: '29C-12345',
     delegatedToDriverId: 'd3',
     delegatedToDriverName: 'Lê Thị Mai',
     assignments: [
@@ -206,6 +216,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     estimatedTotal: 2500000,
     priceConfirmed: true,
     orderLine: 'van-tai',
+    customerType: 'doanh-nghiep',
+    delegatedVehiclePlate: '30H-88776',
     assignments: [
       { driverId: 'd1', driverName: 'Nguyễn Văn Hùng', status: 'cho-nhan' },
     ],
@@ -229,6 +241,8 @@ export const MOCK_ORDERS: RescueOrder[] = [
     estimatedTotal: 1800000,
     priceConfirmed: true,
     orderLine: 'van-tai',
+    customerType: 'doanh-nghiep',
+    delegatedVehiclePlate: '51G-55443',
     activeHandlerDriverId: 'd1',
     activeHandlerDriverName: 'Nguyễn Văn Hùng',
     assignments: [

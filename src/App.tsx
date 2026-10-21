@@ -5,7 +5,8 @@ import DeviceChrome from './components/DeviceChrome';
 import { RoleGuard, RoleHomeRedirect } from './components/RoleGuard';
 import { RoleRouteSync } from './components/RoleRouteSync';
 import FilterSheet from './components/FilterSheet';
-import { LocationModal } from './components/LocationModal';
+import ConnectionNotice from './components/ConnectionNotice';
+import { LocationPermissionGate } from './components/LocationModal';
 import { AppProvider, useApp } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AccountLockedPage from './pages/AccountLockedPage';
@@ -44,14 +45,14 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const SignInRedirect: React.FC<{
-  onLogin: (options?: { askLocation?: boolean }) => void;
+  onLogin: () => void;
 }> = ({ onLogin }) => {
   const { driverRole } = useApp();
   const navigate = useNavigate();
 
   const handleLogin = () => {
     const needGuide = !isOnboardingDone();
-    onLogin({ askLocation: !needGuide });
+    onLogin();
     const dest = needGuide
       ? '/onboarding'
       : driverRole === 'quote-only'
@@ -75,17 +76,9 @@ const AppRoutes: React.FC = () => {
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [filterMode, setFilterMode] = React.useState<'rescue' | 'quote'>('rescue');
   const [filterDraft, setFilterDraft] = React.useState<FilterState>(emptyFilter);
-  const [locationPrompt, setLocationPrompt] = React.useState(false);
 
-  const handleLogin = (options?: { askLocation?: boolean }) => {
+  const handleLogin = () => {
     login();
-    if (options?.askLocation !== false) {
-      setLocationPrompt(true);
-    }
-  };
-
-  const finishOnboarding = () => {
-    setLocationPrompt(true);
   };
 
   return (
@@ -115,7 +108,7 @@ const AppRoutes: React.FC = () => {
           path="/onboarding"
           element={
             <ProtectedRoute>
-              <OnboardingPage onFinished={finishOnboarding} />
+              <OnboardingPage />
             </ProtectedRoute>
           }
         />
@@ -243,11 +236,7 @@ const AppRoutes: React.FC = () => {
         onClear={() => setFilterDraft(emptyFilter)}
       />
 
-      <LocationModal
-        open={locationPrompt}
-        onAllow={() => setLocationPrompt(false)}
-        onDeny={() => setLocationPrompt(false)}
-      />
+      <LocationPermissionGate />
     </>
   );
 };
@@ -262,11 +251,12 @@ const App: React.FC = () => (
             <DeviceChrome />
             <div className="dm-device__app">
               <AppRoutes />
+              <ConnectionNotice />
             </div>
           </div>
         </div>
         <p className="dm-preview-hint">
-          Preview — Workfield · Cứu hộ · Báo giá · Quản lý đơn · Dữ liệu mẫu
+          Preview — VETC Cứu hộ · Báo giá · Quản lý đơn · Dữ liệu mẫu
         </p>
       </div>
     </AppProvider>

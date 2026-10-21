@@ -1,4 +1,4 @@
-import { FilterState, QuoteOrder, QuoteStatus, RescueOrder } from '../types';
+import { FilterState, orderKindOf, QuoteOrder, QuoteStatus, RescueOrder } from '../types';
 
 function parseDdMmYyyy(value: string): Date | null {
   const trimmed = value.trim();
@@ -39,7 +39,11 @@ export function isFilterActive(filter: FilterState, includeServiceTypes = true):
     Boolean(filter.toDate.trim()) ||
     Boolean(filter.plate.trim()) ||
     filter.statuses.length > 0 ||
-    (includeServiceTypes && filter.serviceTypes.length > 0)
+    (includeServiceTypes && filter.serviceTypes.length > 0) ||
+    filter.customerTypes.length > 0 ||
+    filter.orderKinds.length > 0 ||
+    filter.driverIds.length > 0 ||
+    filter.vehiclePlates.length > 0
   );
 }
 
@@ -53,6 +57,10 @@ export function countActiveFilterCriteria(
   if (filter.plate.trim()) count += 1;
   if (filter.statuses.length > 0) count += 1;
   if (includeServiceTypes && filter.serviceTypes.length > 0) count += 1;
+  if (filter.customerTypes.length > 0) count += 1;
+  if (filter.orderKinds.length > 0) count += 1;
+  if (filter.driverIds.length > 0) count += 1;
+  if (filter.vehiclePlates.length > 0) count += 1;
   return count;
 }
 
@@ -99,6 +107,32 @@ export function matchesOrderFilter(
       haystack.includes(service.toLowerCase()),
     );
     if (!matchesService) return false;
+  }
+
+  if (filter.customerTypes.length > 0) {
+    const kind = order.customerType ?? 'ca-nhan';
+    if (!filter.customerTypes.includes(kind)) return false;
+  }
+
+  if (filter.orderKinds.length > 0 && !filter.orderKinds.includes(orderKindOf(order))) {
+    return false;
+  }
+
+  if (filter.driverIds.length > 0) {
+    const driverIds = new Set(
+      [
+        order.activeHandlerDriverId,
+        order.delegatedToDriverId,
+        ...(order.assignments?.map((item) => item.driverId) ?? []),
+      ].filter((id): id is string => Boolean(id)),
+    );
+    if (!filter.driverIds.some((id) => driverIds.has(id))) return false;
+  }
+
+  if (filter.vehiclePlates.length > 0) {
+    const vehicle = normalizePlate(order.delegatedVehiclePlate ?? '');
+    const selected = filter.vehiclePlates.map(normalizePlate);
+    if (!vehicle || !selected.includes(vehicle)) return false;
   }
 
   return true;

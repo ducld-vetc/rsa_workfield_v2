@@ -1667,6 +1667,29 @@
   min-height: 0;
 }
 
+.rescue-live__connection {
+  position: absolute;
+  top: var(--dls-space-12);
+  left: 50%;
+  z-index: 450;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  margin: 0;
+  padding: 0 12px;
+  border-radius: var(--dls-radius-pill);
+  background: var(--dls-theme);
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: var(--dls-shadow-lg);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .rescue-live__route-pill {
   display: inline-flex;
   align-items: center;
@@ -2169,6 +2192,10 @@
   flex: 0 0 clamp(140px, 34vh, 220px);
 }
 
+.order-detail-live .rescue-live__connection {
+  top: calc(var(--dls-space-12) + 4px);
+}
+
 .order-detail-live__eta {
   opacity: 1;
 }
@@ -2592,9 +2619,14 @@ a.order-detail-meta__value {
 
 .rescue-camera__pending {
   margin: 0;
-  font-size: var(--dls-text-xs);
-  font-weight: 600;
-  color: var(--dls-warning);
+  padding: 10px 12px;
+  border-radius: var(--dls-radius-12);
+  background: var(--dls-warning-bg);
+  border: 1px solid #ffe4c4;
+  font-size: var(--dls-text-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  color: #92400e;
   text-align: center;
 }
 
@@ -3062,47 +3094,58 @@ a.order-detail-meta__value {
 
 .rescue-camera-live__stamp {
   position: absolute;
-  left: var(--dls-space-12);
+  left: 16px;
+  right: 16px;
   bottom: calc(108px + var(--dls-safe-bottom));
   z-index: 2;
   display: flex;
-  align-items: flex-start;
-  gap: var(--dls-space-8);
-  max-width: calc(100% - 24px);
-  padding: 10px 12px;
-  border-radius: var(--dls-radius-12);
-  background: rgba(9, 27, 55, 0.62);
+  flex-direction: column;
+  gap: 6px;
   color: #fff;
   pointer-events: none;
-}
-
-.rescue-camera-live__logo {
-  width: 52px;
-  height: auto;
-  flex-shrink: 0;
-  display: block;
-}
-
-.rescue-camera-live__stamp-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.35;
-  font-variant-numeric: tabular-nums;
-}
-
-.rescue-camera-live__brand {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 .rescue-camera-live__clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rescue-camera-live__time {
+  font-size: 48px;
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+}
+
+.rescue-camera-live__seconds {
+  align-self: flex-start;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.rescue-camera-live__bar {
+  width: 3px;
+  height: 34px;
+  border-radius: 1px;
+  background: #f5c400;
+  flex-shrink: 0;
+}
+
+.rescue-camera-live__date {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rescue-camera-live__line {
+  margin: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .rescue-camera-live__shutter {
@@ -3357,6 +3400,17 @@ a.order-detail-meta__value {
   animation: mission-live-pulse 1.5s ease-in-out infinite;
 }
 
+.rescue-empty__ready-pill--poor {
+  background: #fff;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.rescue-empty__ready-pill--poor .rescue-empty__ready-pill-dot {
+  background: #dc2626;
+  animation: none;
+}
+
 .rescue-empty__icon-wrap--not-ready {
   background: var(--dls-warning-bg);
   color: #b45309;
@@ -3586,6 +3640,44 @@ a.order-detail-meta__value {
 .grab-settings__section {
   padding: 0 var(--dls-space-16);
   margin-bottom: var(--dls-space-16);
+}
+
+.grab-settings__stats-title {
+  margin: 0 0 var(--dls-space-8);
+  font-size: var(--dls-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dls-secondary);
+}
+
+.grab-settings__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dls-space-8);
+}
+
+.grab-settings-stat {
+  padding: var(--dls-space-12);
+  border-radius: var(--dls-radius-12);
+  background: var(--dls-theme);
+  box-shadow: var(--dls-shadow-sm);
+}
+
+.grab-settings-stat p {
+  margin: 0;
+  font-size: var(--dls-text-xs);
+  line-height: var(--dls-lh-xs);
+  color: var(--dls-secondary);
+}
+
+.grab-settings-stat strong {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--dls-text-lg);
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--dls-primary);
 }
 
 .grab-settings-card {

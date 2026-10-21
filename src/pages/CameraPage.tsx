@@ -40,7 +40,7 @@ function draftsEqual(
 const CameraPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getOrder, updateOrder } = useApp();
+  const { getOrder, updateOrder, currentDriverName, poorConnection, enqueueSync, noteBuffered } = useApp();
   const order = getOrder(id ?? '');
 
   const [draft, setDraft] = React.useState<Record<RescuePhotoCategory, string[]>>(emptyDraft);
@@ -67,15 +67,20 @@ const CameraPage: React.FC = () => {
   const appendToDraft = (categoryId: RescuePhotoCategory, dataUrl: string): boolean => {
     const cat = RESCUE_PHOTO_CATEGORIES.find((c) => c.id === categoryId)!;
     let atLimit = false;
+    let added = false;
     setDraft((prev) => {
       if (prev[categoryId].length >= cat.max) {
         atLimit = true;
         return prev;
       }
+      added = true;
       const next = [...prev[categoryId], dataUrl].slice(0, cat.max);
       atLimit = next.length >= cat.max;
       return { ...prev, [categoryId]: next };
     });
+    if (added && poorConnection) {
+      enqueueSync({ kind: 'photo', orderId: id ?? '', label: `Ảnh ${cat.label}` });
+    }
     return atLimit;
   };
 
@@ -119,7 +124,13 @@ const CameraPage: React.FC = () => {
 
       const fallback = getOrderPickup(latest);
       const geo = await getGeoPosition(fallback);
-      const meta = { capturedAt: new Date(), lat: geo.lat, lng: geo.lng };
+      const meta = {
+        capturedAt: new Date(),
+        lat: geo.lat,
+        lng: geo.lng,
+        address: latest.address,
+        photographer: currentDriverName,
+      };
 
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) continue;
@@ -140,6 +151,7 @@ const CameraPage: React.FC = () => {
       updates[cat.field] = draft[cat.id].slice(0, cat.max);
     });
     updateOrder(order.id, updates);
+    if (poorConnection) noteBuffered();
     goBack();
   };
 
@@ -158,6 +170,11 @@ const CameraPage: React.FC = () => {
       <DlsTopNav title="Chụp ảnh cứu hộ" onBack={goBack} />
 
       <div className="rescue-camera rescue-camera--simple">
+        {poorConnection && (
+          <p className="rescue-camera__pending" role="status">
+            Ảnh chờ gửi khi kết nối ổn định.
+          </p>
+        )}
         <div className="rescue-camera__groups">
           {RESCUE_PHOTO_CATEGORIES.map((cat) => {
             const photos = draft[cat.id];

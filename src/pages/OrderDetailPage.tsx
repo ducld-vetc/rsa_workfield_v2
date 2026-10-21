@@ -58,7 +58,16 @@ function getEtaLabel(order: RescueOrder): string | null {
 const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getOrder, updateOrder, getQuoteOrder, driverRole, currentDriverId, currentDriverName } = useApp();
+  const {
+    getOrder,
+    updateOrder,
+    getQuoteOrder,
+    driverRole,
+    currentDriverId,
+    currentDriverName,
+    poorConnection,
+    enqueueSync,
+  } = useApp();
   const order = getOrder(id ?? '');
   const [rejectOpen, setRejectOpen] = React.useState(false);
   const [assignOpen, setAssignOpen] = React.useState(false);
@@ -161,6 +170,11 @@ const OrderDetailPage: React.FC = () => {
       <div className="rescue-live order-detail-live">
         <div className="rescue-live__map order-detail-live__map">
           <RescueMap order={order} />
+          {poorConnection && (
+            <p className="rescue-live__connection" role="status">
+              Kết nối yếu
+            </p>
+          )}
           <button
             type="button"
             className="grab-job__back"
@@ -391,7 +405,16 @@ const OrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   className="grab-btn-accept rescue-sheet__action-btn--primary"
-                  onClick={() => navigate('/home')}
+                  onClick={() => {
+                    if (poorConnection) {
+                      enqueueSync({
+                        kind: 'status',
+                        orderId: order.id,
+                        label: 'Tiếp tục cứu hộ',
+                      });
+                    }
+                    navigate('/home');
+                  }}
                 >
                   Tiếp tục cứu hộ
                 </button>

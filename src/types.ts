@@ -115,6 +115,24 @@ export const RESCUE_CHANNEL_LABELS: Record<RescueChannel, string> = {
   'noi-bo': 'Nội bộ',
 };
 
+export type CustomerKind = 'ca-nhan' | 'doanh-nghiep';
+
+export const CUSTOMER_KIND_LABELS: Record<CustomerKind, string> = {
+  'ca-nhan': 'Cá nhân',
+  'doanh-nghiep': 'Doanh nghiệp',
+};
+
+export const ORDER_KIND_FILTERS: { id: string; label: string }[] = [
+  { id: 'cuu-ho-vetc', label: 'Cứu hộ VETC' },
+  { id: 'cuu-ho-noi-bo', label: 'Cứu hộ nội bộ' },
+  { id: 'van-tai', label: 'Vận tải' },
+];
+
+export function orderKindOf(order: Pick<RescueOrder, 'orderLine' | 'services' | 'serviceLines' | 'rescueChannel' | 'quoteOrderId'>): string {
+  if (orderLineOf(order) === 'van-tai') return 'van-tai';
+  return rescueChannelOf(order) === 'vetc' ? 'cuu-ho-vetc' : 'cuu-ho-noi-bo';
+}
+
 const TRANSPORT_SERVICE = /chở xe|chở cây|vận tải/i;
 
 export function orderLineOf(order: Pick<RescueOrder, 'orderLine' | 'services' | 'serviceLines'>): OrderLine {
@@ -208,6 +226,7 @@ export interface FieldOrderInput {
   towCoords?: GeoPoint;
   /** Cứu hộ hoặc vận tải. Đơn tạo tại trạm là nội bộ. */
   orderLine?: OrderLine;
+  customerType?: CustomerKind;
 }
 
 export interface RescueOrder {
@@ -263,6 +282,7 @@ export interface RescueOrder {
   towCoords?: GeoPoint;
   customerPhone?: string;
   customerName?: string;
+  customerType?: CustomerKind;
   /** Mô tả chi tiết tình trạng xe */
   conditionDescription?: string;
   /** Số tiền khách đã cọc */
@@ -313,6 +333,10 @@ export interface FilterState {
   plate: string;
   serviceTypes: string[];
   statuses: string[];
+  customerTypes: string[];
+  orderKinds: string[];
+  driverIds: string[];
+  vehiclePlates: string[];
 }
 
 export interface NotificationItem {

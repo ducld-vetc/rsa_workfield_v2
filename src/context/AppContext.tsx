@@ -16,6 +16,10 @@ const EMPTY_FILTER: FilterState = {
   plate: '',
   serviceTypes: [],
   statuses: [],
+  customerTypes: [],
+  orderKinds: [],
+  driverIds: [],
+  vehiclePlates: [],
 };
 
 import { MOCK_QUOTE_DRIVERS } from '../data/mockQuoteResources';
@@ -36,6 +40,16 @@ interface AppContextValue {
   setCurrentDriverId: (id: string) => void;
   demoHasOrders: boolean;
   setDemoHasOrders: (v: boolean) => void;
+  locationGateOn: boolean;
+  setLocationGateOn: (v: boolean) => void;
+  poorConnection: boolean;
+  setPoorConnection: (on: boolean) => void;
+  pendingSyncCount: number;
+  bufferNotice: string | null;
+  syncNotice: string | null;
+  dismissConnectionNotice: () => void;
+  enqueueSync: (item: { kind: 'status' | 'photo'; orderId: string; label: string }) => void;
+  noteBuffered: () => void;
   updateOrder: (id: string, patch: Partial<RescueOrder>) => void;
   updateQuoteOrder: (id: string, patch: Partial<QuoteOrder>) => void;
   getOrder: (id: string) => RescueOrder | undefined;
@@ -61,6 +75,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [driverRole, setDriverRole] = React.useState<DriverRole>('quote-rescue');
   const [currentDriverId, setCurrentDriverId] = React.useState(DEFAULT_DRIVER.id);
   const [demoHasOrders, setDemoHasOrders] = React.useState(true);
+  const [locationGateOn, setLocationGateOn] = React.useState(true);
+  const [poorConnection, setPoorConnectionState] = React.useState(false);
+  const [pendingSync, setPendingSync] = React.useState<
+    { id: string; kind: 'status' | 'photo'; orderId: string; label: string; actedAt: number }[]
+  >([]);
+  const [bufferNotice, setBufferNotice] = React.useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = React.useState<string | null>(null);
+  const pendingSyncRef = React.useRef(pendingSync);
+  pendingSyncRef.current = pendingSync;
+
+  const showBufferNotice = () => {
+    setBufferNotice('Đã lưu trên máy. Sẽ gửi khi kết nối ổn định.');
+  };
+
+  const setPoorConnection = (on: boolean) => {
+    setPoorConnectionState(on);
+    if (!on) {
+      const count = pendingSyncRef.current.length;
+      if (count > 0) setSyncNotice(`Đã gửi ${count} thao tác.`);
+      setPendingSync([]);
+      setBufferNotice(null);
+    }
+  };
+
+  const enqueueSync = (item: { kind: 'status' | 'photo'; orderId: string; label: string }) => {
+    setPendingSync((prev) => [
+      ...prev,
+      {
+        ...item,
+        id: `sync-${Date.now()}-${prev.length}`,
+        actedAt: Date.now(),
+      },
+    ]);
+    showBufferNotice();
+  };
   const [appliedFilter, setAppliedFilter] = React.useState<FilterState>(EMPTY_FILTER);
   const [appliedQuoteFilter, setAppliedQuoteFilter] = React.useState<FilterState>(EMPTY_FILTER);
 
@@ -133,6 +182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .join(' · ') || undefined,
       incidentPhotos: input.incidentPhotos,
       customerName: input.customerName.trim() || undefined,
+      customerType: input.customerType,
       customerPhone: input.customerPhone.trim() || undefined,
       estimatedTotal: input.estimatedTotal,
       priceConfirmed: input.estimatedTotal != null,
@@ -216,6 +266,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentDriverId: handleSetCurrentDriverId,
         demoHasOrders,
         setDemoHasOrders,
+        locationGateOn,
+        setLocationGateOn,
+        poorConnection,
+        setPoorConnection,
+        pendingSyncCount: pendingSync.length,
+        bufferNotice,
+        syncNotice,
+        dismissConnectionNotice: () => {
+          setBufferNotice(null);
+          setSyncNotice(null);
+        },
+        enqueueSync,
+        noteBuffered: showBufferNotice,
         updateOrder,
         updateQuoteOrder,
         getOrder,
