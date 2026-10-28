@@ -34,6 +34,9 @@ import RegisterQuickServicePage from './pages/RegisterQuickServicePage';
 import SettingsPage from './pages/SettingsPage';
 import StaffDetailPage from './pages/StaffDetailPage';
 import StaffManagementPage from './pages/StaffManagementPage';
+import VehicleDetailPage from './pages/VehicleDetailPage';
+import VehicleFormPage from './pages/VehicleFormPage';
+import VehicleListPage from './pages/VehicleListPage';
 import WelcomePage from './pages/WelcomePage';
 import { FilterState } from './types';
 import { isOnboardingDone } from './utils/onboarding';
@@ -194,6 +197,30 @@ const AppRoutes: React.FC = () => {
                   logout();
                 }}
               />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/vehicles"
+          element={
+            <ProtectedRoute>
+              <VehicleListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/vehicles/new"
+          element={
+            <ProtectedRoute>
+              <VehicleFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/vehicles/:id"
+          element={
+            <ProtectedRoute>
+              <VehicleDetailPage />
             </ProtectedRoute>
           }
         />

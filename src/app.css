@@ -4,15 +4,38 @@
 }
 
 html {
+  height: 100%;
   font-family: var(--dls-font);
+  overflow: hidden;
 }
 
 body {
+  height: 100%;
   margin: 0;
+  overflow: hidden;
   font-family: var(--dls-font);
   background: #e8ecf0;
   -webkit-font-smoothing: antialiased;
   color: var(--dls-primary);
+}
+
+/* Ẩn mọi thanh cuộn trên preview và trong khung điện thoại. Nội dung vẫn cuộn. */
+html,
+body,
+.dm-preview-frame,
+.dm-preview-frame * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.dm-preview-frame::-webkit-scrollbar,
+.dm-preview-frame *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 button,
@@ -29,8 +52,9 @@ select {
 
 /* ——— Preview frame (desktop) / fullscreen (mobile) ——— */
 .dm-preview-frame {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -1143,6 +1167,8 @@ select {
 .dm-demo-panel {
   width: 220px;
   flex-shrink: 0;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
   padding: var(--dls-space-16);
   border-radius: var(--dls-radius-16);
   background: var(--dls-theme);

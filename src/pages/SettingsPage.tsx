@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Users } from 'lucide-react';
+import { BookOpen, Truck, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MainShell from '../layouts/MainShell';
 import { ConfirmDialog } from '../components/DetailRow';
@@ -92,6 +92,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               icon={<LockIcon />}
               label="Đổi mật khẩu"
               onClick={() => navigate('/change-password')}
+            />
+            <DlsListRow
+              icon={<Truck size={20} strokeWidth={1.75} />}
+              label="Phương tiện"
+              onClick={() => navigate('/settings/vehicles')}
             />
             <DlsListRow
               icon={<Users size={20} strokeWidth={1.75} />}
