@@ -38,6 +38,12 @@ function formatPlateDisplay(plate: string): string {
   return plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 }
 
+function formatOdoKm(value?: string): string {
+  const digits = value?.replace(/\D/g, '') ?? '';
+  if (!digits) return '—';
+  return `${Number(digits).toLocaleString('vi-VN')} km`;
+}
+
 function hasTowService(order: RescueOrder): boolean {
   return Boolean(order.towDestination) || /kéo|cẩu/i.test(order.services);
 }
@@ -234,6 +240,25 @@ const OrderDetailPage: React.FC = () => {
                   <span className="order-detail-meta__value">—</span>
                 )}
               </div>
+            </div>
+
+            <div className="order-detail-meta" aria-label="ODO">
+              <div className="order-detail-meta__item">
+                <span className="order-detail-meta__label">ODO bắt đầu</span>
+                <span className="order-detail-meta__value">{formatOdoKm(order.startOdoKm)}</span>
+              </div>
+              <div className="order-detail-meta__item">
+                <span className="order-detail-meta__label">ODO kết thúc</span>
+                <span className="order-detail-meta__value">{formatOdoKm(order.endOdoKm)}</span>
+              </div>
+              {order.returnToWorkshop != null && (
+                <div className="order-detail-meta__item order-detail-meta__item--wide">
+                  <span className="order-detail-meta__label">Kéo về xưởng</span>
+                  <span className="order-detail-meta__value">
+                    {order.returnToWorkshop ? order.workshopName || '—' : 'Không'}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="order-detail-condition">

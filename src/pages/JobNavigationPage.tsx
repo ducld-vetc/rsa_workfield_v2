@@ -2,6 +2,7 @@ import React from 'react';
 import { Camera, MapPin, Navigation, Phone, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import RatingSheet from '../components/RatingSheet';
+import { CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOdoSheet';
 import AddressMapLink from '../components/AddressMapLink';
 import { useApp } from '../context/AppContext';
 import { DlsHomeIndicator } from '@dls/components';
@@ -21,6 +22,7 @@ const JobNavigationPage: React.FC = () => {
   const { getOrder, updateOrder } = useApp();
   const order = getOrder(id ?? '');
   const [ratingOpen, setRatingOpen] = React.useState(false);
+  const [completeOpen, setCompleteOpen] = React.useState(false);
 
   if (!order) {
     return (
@@ -38,11 +40,22 @@ const JobNavigationPage: React.FC = () => {
   const advanceStage = () => {
     if (!action.next) return;
     if (action.next === 'hoan-thanh') {
-      updateOrder(order.id, { jobStage: 'hoan-thanh', status: 'hoan-thanh' });
-      setRatingOpen(true);
+      setCompleteOpen(true);
       return;
     }
     updateOrder(order.id, { jobStage: action.next });
+  };
+
+  const confirmComplete = (input: CompleteRescueInput) => {
+    updateOrder(order.id, {
+      jobStage: 'hoan-thanh',
+      status: 'hoan-thanh',
+      endOdoKm: input.endOdoKm,
+      returnToWorkshop: input.returnToWorkshop,
+      workshopName: input.workshopName,
+    });
+    setCompleteOpen(false);
+    setRatingOpen(true);
   };
 
   const handleRating = () => {
@@ -134,6 +147,11 @@ const JobNavigationPage: React.FC = () => {
         )}
       </div>
 
+      <CompleteRescueSheet
+        open={completeOpen}
+        onClose={() => setCompleteOpen(false)}
+        onConfirm={confirmComplete}
+      />
       <RatingSheet open={ratingOpen} onClose={handleRating} onSubmit={handleRating} />
       <DlsHomeIndicator />
     </div>

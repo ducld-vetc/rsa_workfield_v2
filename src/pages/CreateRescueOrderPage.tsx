@@ -159,6 +159,7 @@ const CreateRescueOrderPage: React.FC = () => {
   const [previewId, setPreviewId] = React.useState<string | null>(null);
   const [driverName, setDriverName] = React.useState(currentDriverName);
   const [vehicleLabel, setVehicleLabel] = React.useState('');
+  const [odoDigits, setOdoDigits] = React.useState('');
   const [amountDigits, setAmountDigits] = React.useState('');
   const [created, setCreated] = React.useState<{ started: boolean } | null>(null);
 
@@ -303,6 +304,7 @@ const CreateRescueOrderPage: React.FC = () => {
       rescueDriverName: driver?.name,
       rescueVehiclePlate: vehicle?.plate,
       estimatedTotal: amount,
+      startOdoKm: odoDigits || undefined,
       orderLine: serviceKind === 'Vận tải' ? 'van-tai' : 'cuu-ho',
     });
     setCreated({ started: result.started });
@@ -683,6 +685,12 @@ const CreateRescueOrderPage: React.FC = () => {
                   </p>
                 )}
               </div>
+              <DlsTextField
+                label="ODO (km)"
+                value={odoDigits}
+                onChange={(value) => setOdoDigits(value.replace(/\D/g, ''))}
+                placeholder="Nhập số công tơ mét"
+              />
               <div
                 ref={(node) => {
                   fieldRefs.current.amount = node ?? undefined;

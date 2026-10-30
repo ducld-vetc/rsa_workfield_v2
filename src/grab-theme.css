@@ -2218,6 +2218,10 @@
   min-width: 0;
 }
 
+.order-detail-meta__item--wide {
+  grid-column: 1 / -1;
+}
+
 .order-detail-meta__label {
   display: block;
   font-size: var(--dls-text-xs);

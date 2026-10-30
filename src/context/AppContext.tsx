@@ -185,6 +185,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       customerType: input.customerType,
       customerPhone: input.customerPhone.trim() || undefined,
       estimatedTotal: input.estimatedTotal,
+      startOdoKm: input.startOdoKm?.replace(/\D/g, '') || undefined,
       priceConfirmed: input.estimatedTotal != null,
       orderLine: input.orderLine ?? 'cuu-ho',
       rescueChannel: input.orderLine === 'van-tai' ? undefined : 'noi-bo',

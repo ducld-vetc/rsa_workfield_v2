@@ -6,6 +6,7 @@ import { EmptyState } from '../components/EmptyState';
 import MissionAssignSheet from '../components/MissionAssignSheet';
 import MissionTaskCard from '../components/MissionTaskCard';
 import ReasonSheet from '../components/ReasonSheet';
+import { AcceptOdoSheet } from '../components/RescueOdoSheet';
 import { ConfirmDialog } from '../components/DetailRow';
 import ActivityOrderRow from '../components/ActivityOrderRow';
 import MainShell from '../layouts/MainShell';
@@ -71,6 +72,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const [assignId, setAssignId] = React.useState<string | null>(null);
   const [assignSuccess, setAssignSuccess] = React.useState<string | null>(null);
   const [busyAcceptOpen, setBusyAcceptOpen] = React.useState(false);
+  const [acceptOdoId, setAcceptOdoId] = React.useState<string | null>(null);
 
   const activeJob = orders.find(
     (o) =>
@@ -131,10 +133,15 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     else setSearchParams({ line: 'cuu-ho', channel: next }, { replace: true });
   };
 
-  const handleAccept = (id: string) => {
-    const order = orders.find((item) => item.id === id);
+  const confirmAccept = (odoKm: string) => {
+    if (!acceptOdoId) return;
+    const order = orders.find((item) => item.id === acceptOdoId);
     if (!order) return;
-    updateOrder(id, patchAcceptOrder(order, currentDriverId, currentDriverName));
+    updateOrder(acceptOdoId, {
+      ...patchAcceptOrder(order, currentDriverId, currentDriverName),
+      startOdoKm: odoKm,
+    });
+    setAcceptOdoId(null);
     navigate('/home');
   };
 
@@ -144,7 +151,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
       setBusyAcceptOpen(true);
       return;
     }
-    handleAccept(id);
+    setAcceptOdoId(id);
   };
 
   const handleReject = (reason: string) => {
@@ -358,6 +365,13 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
           )}
         </div>
       </div>
+
+      <AcceptOdoSheet
+        open={acceptOdoId != null}
+        initialOdo={orders.find((item) => item.id === acceptOdoId)?.startOdoKm}
+        onClose={() => setAcceptOdoId(null)}
+        onConfirm={confirmAccept}
+      />
 
       <ReasonSheet
         open={rejectId != null}

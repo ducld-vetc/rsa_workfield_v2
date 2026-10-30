@@ -80,6 +80,14 @@ export const DlsSearchField: React.FC<{
 );
 
 /* ——— Select field (DLS picker sheet — không dùng native <select>) ——— */
+function foldSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
+}
+
 export const DlsSelectField: React.FC<{
   label: string;
   value: string;
@@ -88,6 +96,8 @@ export const DlsSelectField: React.FC<{
   placeholder?: string;
   required?: boolean;
   sheetTitle?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }> = ({
   label,
   value,
@@ -96,8 +106,20 @@ export const DlsSelectField: React.FC<{
   placeholder = 'Chọn',
   required,
   sheetTitle,
+  searchable = false,
+  searchPlaceholder = 'Tìm kiếm',
 }) => {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+
+  React.useEffect(() => {
+    if (!open) setQuery('');
+  }, [open]);
+
+  const needle = foldSearch(query.trim());
+  const visibleOptions = needle
+    ? options.filter((option) => foldSearch(option).includes(needle))
+    : options;
 
   return (
     <>
@@ -125,9 +147,19 @@ export const DlsSelectField: React.FC<{
         >
           <div className="dls-sheet" onClick={(event) => event.stopPropagation()}>
             <DlsSheetHeader title={sheetTitle || label} onClose={() => setOpen(false)} />
+            {searchable && (
+              <div className="dls-sheet-search">
+                <DlsSearchField
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={searchPlaceholder}
+                  ariaLabel={searchPlaceholder}
+                />
+              </div>
+            )}
             <div className="dls-sheet-body dls-sheet-body--form">
               <div className="dls-reason-list" role="listbox" aria-label={label}>
-                {options.map((option) => (
+                {visibleOptions.map((option) => (
                   <button
                     key={option}
                     type="button"
@@ -142,6 +174,9 @@ export const DlsSelectField: React.FC<{
                     {option}
                   </button>
                 ))}
+                {visibleOptions.length === 0 && (
+                  <p className="dls-sheet-empty">Không có kết quả phù hợp.</p>
+                )}
               </div>
             </div>
             <DlsHomeIndicator />

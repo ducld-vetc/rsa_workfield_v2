@@ -881,6 +881,17 @@
   justify-self: end;
 }
 
+.dls-sheet-search {
+  padding: 0 var(--dls-space-16) var(--dls-space-4);
+}
+
+.dls-sheet-empty {
+  margin: var(--dls-space-8) 0 0;
+  color: var(--dls-secondary);
+  font-size: var(--dls-text-sm);
+  line-height: var(--dls-lh-sm);
+}
+
 .dls-sheet-body {
   flex: 1;
   overflow-y: auto;

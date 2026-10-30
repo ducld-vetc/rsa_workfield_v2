@@ -13,6 +13,7 @@ import {
   Siren,
 } from 'lucide-react';
 import RatingSheet from '../components/RatingSheet';
+import { CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOdoSheet';
 import RescueMap from '../components/RescueMap';
 import AddressMapLink from '../components/AddressMapLink';
 import MainShell from '../layouts/MainShell';
@@ -93,6 +94,8 @@ const RescuePage: React.FC = () => {
     poorConnection,
   } = useApp();
   const [ratingOpen, setRatingOpen] = React.useState(false);
+  const [completeOpen, setCompleteOpen] = React.useState(false);
+  const handleRating = () => setRatingOpen(false);
 
   if (driverRole === 'quote-only') {
     return <Navigate to="/quotes" replace />;
@@ -155,6 +158,7 @@ const RescuePage: React.FC = () => {
             </button>
           </div>
         </div>
+        <RatingSheet open={ratingOpen} onClose={handleRating} onSubmit={handleRating} />
       </MainShell>
     );
   }
@@ -168,15 +172,22 @@ const RescuePage: React.FC = () => {
   const advanceStage = () => {
     if (!action.next) return;
     if (action.next === 'hoan-thanh') {
-      updateOrder(activeJob.id, { jobStage: 'hoan-thanh', status: 'hoan-thanh' });
-      setRatingOpen(true);
+      setCompleteOpen(true);
       return;
     }
     updateOrder(activeJob.id, { jobStage: action.next });
   };
 
-  const handleRating = () => {
-    setRatingOpen(false);
+  const confirmComplete = (input: CompleteRescueInput) => {
+    updateOrder(activeJob.id, {
+      jobStage: 'hoan-thanh',
+      status: 'hoan-thanh',
+      endOdoKm: input.endOdoKm,
+      returnToWorkshop: input.returnToWorkshop,
+      workshopName: input.workshopName,
+    });
+    setCompleteOpen(false);
+    setRatingOpen(true);
   };
 
   const etaLabel =
@@ -310,6 +321,11 @@ const RescuePage: React.FC = () => {
         </div>
       </div>
 
+      <CompleteRescueSheet
+        open={completeOpen}
+        onClose={() => setCompleteOpen(false)}
+        onConfirm={confirmComplete}
+      />
       <RatingSheet open={ratingOpen} onClose={handleRating} onSubmit={handleRating} />
     </MainShell>
   );

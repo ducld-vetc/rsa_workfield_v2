@@ -222,6 +222,8 @@ export interface FieldOrderInput {
   rescueVehiclePlate?: string;
   /** Số tiền cứu hộ, đã gồm thuế */
   estimatedTotal?: number;
+  /** ODO xe cứu hộ lúc tạo đơn, km. Không bắt buộc. */
+  startOdoKm?: string;
   pickupCoords?: GeoPoint;
   towCoords?: GeoPoint;
   /** Cứu hộ hoặc vận tải. Đơn tạo tại trạm là nội bộ. */
@@ -278,6 +280,14 @@ export interface RescueOrder {
   delegatedVehiclePlate?: string;
   /** Lý do phân công / thay đổi tài xế */
   assignChangeReason?: string;
+  /** ODO xe cứu hộ lúc tạo hoặc lúc nhận đơn, km */
+  startOdoKm?: string;
+  /** ODO xe cứu hộ khi hoàn thành, km */
+  endOdoKm?: string;
+  /** Tài xế có kéo xe về xưởng khi hoàn thành */
+  returnToWorkshop?: boolean;
+  /** Xưởng được chọn khi kéo về */
+  workshopName?: string;
   pickupCoords?: GeoPoint;
   towCoords?: GeoPoint;
   customerPhone?: string;
