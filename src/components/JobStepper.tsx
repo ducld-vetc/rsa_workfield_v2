@@ -2,7 +2,14 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { JOB_STAGE_LABELS, JobStage } from '../types';
 
-const STAGES: JobStage[] = ['da-nhan', 'da-den-diem', 'dang-keo', 'hoan-thanh'];
+const STAGES: JobStage[] = [
+  'da-nhan',
+  'dang-di-chuyen',
+  'da-den-diem',
+  'dang-keo',
+  'da-keo-toi',
+  'hoan-thanh',
+];
 
 const stageIndex = (s: JobStage) => STAGES.indexOf(s);
 

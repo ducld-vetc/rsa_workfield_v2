@@ -6,15 +6,13 @@ import { CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOd
 import AddressMapLink from '../components/AddressMapLink';
 import { useApp } from '../context/AppContext';
 import { DlsHomeIndicator } from '@dls/components';
-import { JOB_STAGE_LABELS, JobStage } from '../types';
-
-const STAGE_ACTIONS: Record<JobStage, { label: string; next?: JobStage }> = {
-  'cho-nhan': { label: 'Nhận đơn', next: 'da-nhan' },
-  'da-nhan': { label: 'Đã đến điểm cứu hộ', next: 'da-den-diem' },
-  'da-den-diem': { label: 'Bắt đầu kéo xe', next: 'dang-keo' },
-  'dang-keo': { label: 'Hoàn thành cứu hộ', next: 'hoan-thanh' },
-  'hoan-thanh': { label: 'Hoàn thành', next: undefined },
-};
+import { JOB_STAGE_LABELS } from '../types';
+import {
+  getStageAction,
+  markPendingRating,
+  rescueCameraPath,
+  suggestedPhotoSet,
+} from '../utils/rescueStage';
 
 const JobNavigationPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,17 +31,19 @@ const JobNavigationPage: React.FC = () => {
   }
 
   const stage = order.jobStage ?? 'da-nhan';
-  const action = STAGE_ACTIONS[stage];
-  const isPickup = stage === 'da-nhan';
-  const isDropoff = stage === 'dang-keo';
+  const hasTow = Boolean(order.towDestination);
+  const action = getStageAction(stage, hasTow);
+  const isPickup = stage === 'da-nhan' || stage === 'dang-di-chuyen';
+  const isDropoff = stage === 'dang-keo' || stage === 'da-keo-toi';
 
   const advanceStage = () => {
-    if (!action.next) return;
-    if (action.next === 'hoan-thanh') {
+    if (action.needsCompleteSheet) {
       setCompleteOpen(true);
       return;
     }
+    if (!action.next) return;
     updateOrder(order.id, { jobStage: action.next });
+    if (action.photoSet) navigate(rescueCameraPath(order.id, action.photoSet, true));
   };
 
   const confirmComplete = (input: CompleteRescueInput) => {
@@ -55,7 +55,8 @@ const JobNavigationPage: React.FC = () => {
       workshopName: input.workshopName,
     });
     setCompleteOpen(false);
-    setRatingOpen(true);
+    markPendingRating();
+    navigate(rescueCameraPath(order.id, 'C', true));
   };
 
   const handleRating = () => {
@@ -122,7 +123,11 @@ const JobNavigationPage: React.FC = () => {
         </div>
 
         <div className="grab-job-actions">
-          <button type="button" className="grab-job-action" onClick={() => navigate(`/jobs/${order.id}/camera`)}>
+          <button
+            type="button"
+            className="grab-job-action"
+            onClick={() => navigate(rescueCameraPath(order.id, suggestedPhotoSet(stage)))}
+          >
             <Camera size={20} />
             <span>Ảnh</span>
           </button>

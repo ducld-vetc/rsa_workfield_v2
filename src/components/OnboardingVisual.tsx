@@ -265,7 +265,7 @@ const OperateScene: React.FC = () => {
                     className="grab-btn-accept rescue-sheet__action-btn--primary guide-snap__primary-cta"
                     tabIndex={-1}
                   >
-                    Đã đến điểm cứu hộ
+                    Bắt đầu di chuyển
                   </button>
                 </div>
               </div>

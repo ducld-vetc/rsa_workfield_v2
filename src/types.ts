@@ -170,8 +170,10 @@ export type OrderStatus =
 export type JobStage =
   | 'cho-nhan'
   | 'da-nhan'
+  | 'dang-di-chuyen'
   | 'da-den-diem'
   | 'dang-keo'
+  | 'da-keo-toi'
   | 'hoan-thanh';
 
 export type ChipFilter = 'tat-ca' | OrderStatus;
@@ -303,9 +305,67 @@ export interface RescueOrder {
   processPhotos?: string[];
   /** Ảnh hoàn tất cứu hộ (tài xế chụp/tải lên) */
   completionPhotos?: string[];
+  /** Ảnh tài xế theo từng mã bộ A/B/C */
+  rescueShotPhotos?: Partial<Record<RescueShotId, string[]>>;
 }
 
 export type RescuePhotoCategory = 'hien-truong' | 'qua-trinh' | 'hoan-tat';
+
+export type RescuePhotoSet = 'A' | 'B' | 'C';
+
+export type RescueShotId =
+  | 'A1'
+  | 'A2'
+  | 'A3'
+  | 'A4'
+  | 'A5'
+  | 'A6'
+  | 'A7'
+  | 'A8'
+  | 'A9'
+  | 'A10'
+  | 'A11'
+  | 'B1'
+  | 'B2'
+  | 'B3'
+  | 'B4'
+  | 'C1'
+  | 'C2'
+  | 'C3'
+  | 'C4';
+
+/** Khung căn trên camera — Vehicle Capture Overlay */
+export type CaptureOverlayKind =
+  | 'scene'
+  | 'plate'
+  | 'front-left'
+  | 'front-right'
+  | 'rear-left'
+  | 'rear-right'
+  | 'damage'
+  | 'dashboard'
+  | 'document'
+  | 'fault'
+  | 'interior'
+  | 'action'
+  | 'flatbed'
+  | 'strap'
+  | 'receipt'
+  | 'handover'
+  | 'corners'
+  | 'signed';
+
+export interface RescueShotDef {
+  id: RescueShotId;
+  set: RescuePhotoSet;
+  label: string;
+  guide: string;
+  overlay: CaptureOverlayKind;
+  max: number;
+  optional?: boolean;
+  /** Chỉ hiện khi đơn có điểm kéo */
+  towOnly?: boolean;
+}
 
 export const RESCUE_PHOTO_CATEGORIES: {
   id: RescuePhotoCategory;
@@ -387,8 +447,10 @@ export const STATUS_STYLES: Record<
 export const JOB_STAGE_LABELS: Record<JobStage, string> = {
   'cho-nhan': 'Chờ nhận',
   'da-nhan': 'Đã nhận đơn',
+  'dang-di-chuyen': 'Đang di chuyển',
   'da-den-diem': 'Đã đến điểm',
   'dang-keo': 'Đang kéo xe',
+  'da-keo-toi': 'Đã kéo tới điểm',
   'hoan-thanh': 'Hoàn thành',
 };
 

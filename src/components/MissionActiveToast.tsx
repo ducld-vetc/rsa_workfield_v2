@@ -9,9 +9,11 @@ interface MissionActiveToastProps {
 }
 
 const STAGE_PROGRESS: Partial<Record<JobStage, number>> = {
-  'da-nhan': 22,
-  'da-den-diem': 72,
-  'dang-keo': 48,
+  'da-nhan': 10,
+  'dang-di-chuyen': 40,
+  'da-den-diem': 62,
+  'dang-keo': 78,
+  'da-keo-toi': 92,
   'hoan-thanh': 100,
 };
 

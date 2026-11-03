@@ -21,27 +21,26 @@ import { useApp } from '../context/AppContext';
 import { DlsStatusBadge } from '@dls/components';
 import { JOB_STAGE_LABELS, JobStage, RescueOrder } from '../types';
 import { getRescueEmptyCopy, getRescueTabActiveJob, isMissionOfferedToMe } from '../utils/orderHandler';
-
-const STAGE_ACTIONS: Record<JobStage, { label: string; next?: JobStage }> = {
-  'cho-nhan': { label: 'Nhận đơn', next: 'da-nhan' },
-  'da-nhan': { label: 'Đã đến điểm cứu hộ', next: 'da-den-diem' },
-  'da-den-diem': { label: 'Bắt đầu kéo xe', next: 'dang-keo' },
-  'dang-keo': { label: 'Hoàn thành cứu hộ', next: 'hoan-thanh' },
-  'hoan-thanh': { label: 'Hoàn thành', next: undefined },
-};
+import {
+  consumePendingRating,
+  getStageAction,
+  markPendingRating,
+  rescueCameraPath,
+} from '../utils/rescueStage';
 
 const MOCK_CUSTOMER_PHONE = '1900123456';
 const MOCK_CSKH_PHONE = '19001888';
 
 function getStageChipLabel(stage: JobStage, hasTow: boolean): string {
+  if (stage === 'dang-di-chuyen') return 'Đang tới điểm';
   if (stage === 'dang-keo' && hasTow) return 'Đang kéo xe về';
-  if (stage === 'da-nhan') return 'Đang tới điểm';
+  if (stage === 'da-keo-toi') return 'Đã kéo tới điểm';
   return JOB_STAGE_LABELS[stage];
 }
 
 function getStageChipVariant(stage: JobStage): 'success' | 'info' | 'warning' | 'neutral' {
-  if (stage === 'dang-keo') return 'info';
-  if (stage === 'da-den-diem' || stage === 'da-nhan') return 'warning';
+  if (stage === 'dang-keo' || stage === 'da-keo-toi') return 'info';
+  if (stage === 'da-den-diem' || stage === 'da-nhan' || stage === 'dang-di-chuyen') return 'warning';
   if (stage === 'hoan-thanh') return 'neutral';
   return 'success';
 }
@@ -60,26 +59,26 @@ type SecondaryAction = {
   onClick: () => void;
 };
 
-function getSecondaryAction(
+function getSecondaryActions(
   stage: JobStage,
   order: RescueOrder,
   navigate: ReturnType<typeof useNavigate>,
-): SecondaryAction | null {
-  if (stage === 'da-den-diem') {
-    return {
-      label: 'Chụp ảnh hiện trường',
-      icon: <Camera size={20} strokeWidth={1.75} />,
-      onClick: () => navigate(`/jobs/${order.id}/camera?type=qua-trinh`),
-    };
-  }
-  if (stage === 'dang-keo') {
-    return {
-      label: 'Phí phát sinh',
-      icon: <Plus size={20} strokeWidth={1.75} />,
-      onClick: () => navigate(`/extra-costs/${order.id}`),
-    };
-  }
-  return null;
+): SecondaryAction[] {
+  const camera = (set: 'A' | 'B' | 'C', label: string): SecondaryAction => ({
+    label,
+    icon: <Camera size={20} strokeWidth={1.75} />,
+    onClick: () => navigate(rescueCameraPath(order.id, set)),
+  });
+  const extraCost: SecondaryAction = {
+    label: 'Phí phát sinh',
+    icon: <Plus size={20} strokeWidth={1.75} />,
+    onClick: () => navigate(`/extra-costs/${order.id}`),
+  };
+
+  if (stage === 'da-den-diem') return [camera('A', 'Xem lại bộ ảnh A')];
+  if (stage === 'dang-keo') return [camera('B', 'Xem lại bộ ảnh B'), extraCost];
+  if (stage === 'da-keo-toi') return [extraCost];
+  return [];
 }
 
 const RescuePage: React.FC = () => {
@@ -96,6 +95,10 @@ const RescuePage: React.FC = () => {
   const [ratingOpen, setRatingOpen] = React.useState(false);
   const [completeOpen, setCompleteOpen] = React.useState(false);
   const handleRating = () => setRatingOpen(false);
+
+  React.useEffect(() => {
+    if (consumePendingRating()) setRatingOpen(true);
+  }, []);
 
   if (driverRole === 'quote-only') {
     return <Navigate to="/quotes" replace />;
@@ -164,18 +167,19 @@ const RescuePage: React.FC = () => {
   }
 
   const stage = activeJob.jobStage ?? 'da-nhan';
-  const action = STAGE_ACTIONS[stage];
-  const secondaryAction = getSecondaryAction(stage, activeJob, navigate);
-  const customerPhone = getCustomerPhone(activeJob);
   const hasTow = Boolean(activeJob.towDestination);
+  const action = getStageAction(stage, hasTow);
+  const secondaryActions = getSecondaryActions(stage, activeJob, navigate);
+  const customerPhone = getCustomerPhone(activeJob);
 
   const advanceStage = () => {
-    if (!action.next) return;
-    if (action.next === 'hoan-thanh') {
+    if (action.needsCompleteSheet) {
       setCompleteOpen(true);
       return;
     }
+    if (!action.next) return;
     updateOrder(activeJob.id, { jobStage: action.next });
+    if (action.photoSet) navigate(rescueCameraPath(activeJob.id, action.photoSet, true));
   };
 
   const confirmComplete = (input: CompleteRescueInput) => {
@@ -187,7 +191,8 @@ const RescuePage: React.FC = () => {
       workshopName: input.workshopName,
     });
     setCompleteOpen(false);
-    setRatingOpen(true);
+    markPendingRating();
+    navigate(rescueCameraPath(activeJob.id, 'C', true));
   };
 
   const etaLabel =
@@ -298,16 +303,17 @@ const RescuePage: React.FC = () => {
             >
               <FileText size={20} strokeWidth={1.75} />
             </button>
-            {secondaryAction && (
+            {secondaryActions.map((item) => (
               <button
+                key={item.label}
                 type="button"
                 className="rescue-sheet__action-btn rescue-sheet__action-btn--icon"
-                onClick={secondaryAction.onClick}
-                aria-label={secondaryAction.label}
+                onClick={item.onClick}
+                aria-label={item.label}
               >
-                {secondaryAction.icon}
+                {item.icon}
               </button>
-            )}
+            ))}
             {stage !== 'hoan-thanh' && (
               <button
                 type="button"

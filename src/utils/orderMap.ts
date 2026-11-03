@@ -51,12 +51,14 @@ export function getDriverPosition(order: RescueOrder): GeoPoint {
   const tow = getOrderTow(order);
   const progress = (order.travelProgress ?? 40) / 100;
   const stage: JobStage = order.jobStage ?? 'da-nhan';
-
-  if (stage === 'da-den-diem') return pickup;
-  if (stage === 'dang-keo' && tow) return interpolate(pickup, tow, progress);
-  if (stage === 'hoan-thanh' && tow) return tow;
-
   const start = offsetFromPickup(pickup);
+
+  if (stage === 'cho-nhan' || stage === 'da-nhan') return start;
+  if (stage === 'dang-di-chuyen') return interpolate(start, pickup, progress);
+  if (stage === 'da-den-diem') return pickup;
+  if (stage === 'dang-keo') return tow ? interpolate(pickup, tow, progress) : pickup;
+  if (stage === 'da-keo-toi' || stage === 'hoan-thanh') return tow ?? pickup;
+
   return interpolate(start, pickup, progress);
 }
 
@@ -76,12 +78,9 @@ export function getRoutePolyline(order: RescueOrder): GeoPoint[] {
   const { pickup, tow, driver } = getMapPoints(order);
   const stage = order.jobStage ?? 'da-nhan';
 
-  if (stage === 'dang-keo' && tow) {
-    return [driver, tow];
-  }
-  if (stage === 'da-den-diem') {
-    return tow ? [pickup, tow] : [pickup];
-  }
+  if (stage === 'dang-keo' && tow) return [driver, tow];
+  if ((stage === 'da-keo-toi' || stage === 'hoan-thanh') && tow) return [pickup, tow];
+  if (stage === 'da-den-diem') return tow ? [pickup, tow] : [pickup];
   return [driver, pickup];
 }
 

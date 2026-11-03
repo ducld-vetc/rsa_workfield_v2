@@ -21,6 +21,7 @@ import {
   patchAssignOrder,
 } from '../utils/orderHandler';
 import { MOCK_QUOTE_DRIVERS, MOCK_RESCUE_VEHICLES } from '../data/mockQuoteResources';
+import { rescueCameraPath, suggestedPhotoSet } from '../utils/rescueStage';
 
 const STATUS_VARIANT = {
   'cho-nhan': 'warning',
@@ -126,7 +127,9 @@ const OrderDetailPage: React.FC = () => {
     'qua-trinh': order.processPhotos ?? [],
     'hoan-tat': order.completionPhotos ?? [],
   };
-  const hasRescuePhotos = Object.values(rescuePhotos).some((items) => items.length > 0);
+  const hasShotPhotos = Object.values(order.rescueShotPhotos ?? {}).some((items) => (items?.length ?? 0) > 0);
+  const hasRescuePhotos =
+    hasShotPhotos || Object.values(rescuePhotos).some((items) => items.length > 0);
   const serviceLines = order.serviceLines ?? [{ name: order.services, value: '' }];
 
   const handleAccept = () => {
@@ -271,7 +274,9 @@ const OrderDetailPage: React.FC = () => {
               )}
             </div>
 
-            {hasRescuePhotos && <RescuePhotosSection photos={rescuePhotos} />}
+            {hasRescuePhotos && (
+              <RescuePhotosSection photos={rescuePhotos} shotPhotos={order.rescueShotPhotos} />
+            )}
 
             <ul className="rescue-sheet__stops">
               <li className="rescue-sheet__stop">
@@ -422,7 +427,9 @@ const OrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   className="rescue-sheet__action-btn rescue-sheet__action-btn--icon"
-                  onClick={() => navigate(`/jobs/${order.id}/camera?type=qua-trinh`)}
+                  onClick={() =>
+                    navigate(rescueCameraPath(order.id, suggestedPhotoSet(order.jobStage ?? 'da-nhan')))
+                  }
                   aria-label="Chụp ảnh cứu hộ"
                 >
                   <Camera size={20} strokeWidth={1.75} />
