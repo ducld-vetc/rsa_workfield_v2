@@ -83,9 +83,9 @@ const QuoteListPage: React.FC<QuoteListPageProps> = ({ onOpenFilter }) => {
     submitQuote(activeOrder.id, data);
   };
 
-  const handleSkip = () => {
+  const handleSkip = (reason: string) => {
     if (!activeOrder) return;
-    skipQuote(activeOrder.id);
+    skipQuote(activeOrder.id, reason);
   };
 
   return (

@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, Flag, MapPin, Wrench } from 'lucide-react';
 import { DlsSelectField, DlsStatusBadge } from '@dls/components';
 import { ConfirmDialog } from './DetailRow';
+import ReasonSheet from './ReasonSheet';
 import QuoteSubmitButton from './QuoteSubmitButton';
 import RescuePhotosSection from './RescuePhotosSection';
 import AddressMapLink from './AddressMapLink';
@@ -29,7 +30,7 @@ interface QuoteInboxPanelProps {
   queueRemaining: number;
   driverRole: DriverRole;
   onSubmit: (data: QuoteSubmitPayload) => void;
-  onSkip: () => void;
+  onSkip: (reason: string) => void;
 }
 
 function formatPlateDisplay(plate: string): string {
@@ -80,9 +81,8 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
   const [vehicleId, setVehicleId] = React.useState(MOCK_RESCUE_VEHICLES[0]?.id ?? '');
   const [stationId, setStationId] = React.useState('');
   const [success, setSuccess] = React.useState(false);
-  const [skipConfirm, setSkipConfirm] = React.useState(false);
+  const [skipOpen, setSkipOpen] = React.useState(false);
   const [expired, setExpired] = React.useState(false);
-  const [extended, setExtended] = React.useState(false);
   const [countdownSeconds, setCountdownSeconds] = React.useState(
     order.quoteCountdownSeconds ?? 0,
   );
@@ -102,9 +102,8 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
     setVehicleId(MOCK_RESCUE_VEHICLES[0]?.id ?? '');
     setStationId('');
     setSuccess(false);
-    setSkipConfirm(false);
+    setSkipOpen(false);
     setExpired(false);
-    setExtended(false);
     setCountdownSeconds(order.quoteCountdownSeconds ?? 0);
     footerExpandedRef.current = false;
     setFooterExpanded(false);
@@ -150,13 +149,6 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
     !expired;
 
   const handlePriceChange = (raw: string) => setPrice(formatVndInput(raw));
-
-  const handleExtend = () => {
-    if (extended) return;
-    setCountdownSeconds((s) => s + 60);
-    setExtended(true);
-    setExpired(false);
-  };
 
   const handleSubmit = () => {
     if (!selectedDriver || !selectedStation) return;
@@ -360,7 +352,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
             <button
               type="button"
               className="rescue-sheet__action-btn rescue-sheet__action-btn--ghost quote-footer-actions__skip"
-              onClick={() => setSkipConfirm(true)}
+              onClick={() => setSkipOpen(true)}
               tabIndex={footerExpanded ? 0 : -1}
               aria-hidden={!footerExpanded}
             >
@@ -368,13 +360,11 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
             </button>
             <div className="quote-footer-actions__submit">
               <QuoteSubmitButton
-                key={`${order.id}-${countdownSeconds}-${extended}`}
+                key={`${order.id}-${countdownSeconds}`}
                 initialSeconds={showCountdown ? countdownSeconds : 0}
                 disabled={!canSubmit}
                 onClick={handleSubmit}
                 onExpire={() => setExpired(true)}
-                canExtend={!extended}
-                onExtend={handleExtend}
                 label={footerExpanded ? 'Gửi báo giá' : 'Báo giá'}
               />
             </div>
@@ -382,18 +372,14 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
         </div>
       </div>
 
-      <ConfirmDialog
-        open={skipConfirm}
-        title="Bỏ qua đơn này?"
-        message="Đơn sẽ được đưa ra khỏi hàng chờ báo giá. Bạn có chắc không?"
-        confirmLabel="Bỏ qua"
-        cancelLabel="Huỷ"
-        danger
-        onConfirm={() => {
-          setSkipConfirm(false);
-          onSkip();
+      <ReasonSheet
+        open={skipOpen}
+        title="Lý do từ chối"
+        onClose={() => setSkipOpen(false)}
+        onConfirm={(reason) => {
+          setSkipOpen(false);
+          onSkip(reason);
         }}
-        onCancel={() => setSkipConfirm(false)}
       />
 
       <ConfirmDialog

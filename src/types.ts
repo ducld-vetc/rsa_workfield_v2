@@ -36,6 +36,8 @@ export interface QuoteOrder {
   quotedPrice?: number;
   quotedEtaMinutes?: number;
   quotedNote?: string;
+  /** Lý do từ chối khi bấm Bỏ qua. */
+  rejectReason?: string;
   quotedDriverName?: string;
   quotedDriverPhone?: string;
   rescueVehiclePlate?: string;

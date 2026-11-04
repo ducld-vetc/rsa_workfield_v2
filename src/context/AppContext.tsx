@@ -56,7 +56,7 @@ interface AppContextValue {
   getOrder: (id: string) => RescueOrder | undefined;
   getQuoteOrder: (id: string) => QuoteOrder | undefined;
   submitQuote: (id: string, data: Partial<QuoteOrder>) => void;
-  skipQuote: (id: string) => void;
+  skipQuote: (id: string, reason: string) => void;
   createFieldOrder: (input: FieldOrderInput) => { id: string; started: boolean };
   appliedFilter: FilterState;
   setAppliedFilter: (f: FilterState) => void;
@@ -136,7 +136,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentDriverId(id);
   };
 
-  const skipQuote = (id: string) => {
+  const skipQuote = (id: string, reason: string) => {
+    updateQuoteOrder(id, { quoteStatus: 'tu-choi', rejectReason: reason });
     setSkippedQuoteIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
 
