@@ -1,16 +1,17 @@
 import React from 'react';
 import { Clock, Flag, MapPin, Wrench } from 'lucide-react';
+import { DlsSelectField, DlsStatusBadge } from '@dls/components';
 import { ConfirmDialog } from './DetailRow';
 import QuoteSubmitButton from './QuoteSubmitButton';
 import RescuePhotosSection from './RescuePhotosSection';
 import AddressMapLink from './AddressMapLink';
 import {
   MOCK_QUOTE_DRIVERS,
+  MOCK_RESCUE_STATIONS,
   MOCK_RESCUE_VEHICLES,
 } from '../data/mockQuoteResources';
 import { formatVndInput, parseVndInput, suggestQuotePrice } from '../utils/quotePrice';
 import { DriverRole, isTowQuote, QuoteOrder, SERVICE_MODE_LABELS } from '../types';
-import { DlsStatusBadge } from '@dls/components';
 
 export interface QuoteSubmitPayload {
   quotedPrice: number;
@@ -20,6 +21,7 @@ export interface QuoteSubmitPayload {
   quotedDriverPhone: string;
   rescueVehiclePlate?: string;
   rescueVehicleType?: string;
+  rescueStationName?: string;
 }
 
 interface QuoteInboxPanelProps {
@@ -76,6 +78,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
   const [etaMinutes, setEtaMinutes] = React.useState('30');
   const [driverId, setDriverId] = React.useState(MOCK_QUOTE_DRIVERS[0]?.id ?? '');
   const [vehicleId, setVehicleId] = React.useState(MOCK_RESCUE_VEHICLES[0]?.id ?? '');
+  const [stationId, setStationId] = React.useState('');
   const [success, setSuccess] = React.useState(false);
   const [skipConfirm, setSkipConfirm] = React.useState(false);
   const [expired, setExpired] = React.useState(false);
@@ -90,12 +93,14 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
 
   const selectedDriver = MOCK_QUOTE_DRIVERS.find((d) => d.id === driverId);
   const selectedVehicle = MOCK_RESCUE_VEHICLES.find((v) => v.id === vehicleId);
+  const selectedStation = MOCK_RESCUE_STATIONS.find((station) => station.id === stationId);
 
   React.useEffect(() => {
     setPrice(formatVndInput(String(suggestQuotePrice(order))));
     setEtaMinutes('30');
     setDriverId(MOCK_QUOTE_DRIVERS[0]?.id ?? '');
     setVehicleId(MOCK_RESCUE_VEHICLES[0]?.id ?? '');
+    setStationId('');
     setSuccess(false);
     setSkipConfirm(false);
     setExpired(false);
@@ -140,6 +145,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
     parseVndInput(price) > 0 &&
     etaMinutes.trim().length > 0 &&
     !!selectedDriver &&
+    !!selectedStation &&
     (!showVehicle || !!selectedVehicle) &&
     !expired;
 
@@ -153,7 +159,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
   };
 
   const handleSubmit = () => {
-    if (!selectedDriver) return;
+    if (!selectedDriver || !selectedStation) return;
     onSubmit({
       quotedPrice: parseVndInput(price),
       quotedEtaMinutes: Number(etaMinutes) || 30,
@@ -162,6 +168,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
       quotedDriverPhone: selectedDriver.phone,
       rescueVehiclePlate: selectedVehicle?.plate,
       rescueVehicleType: selectedVehicle?.type,
+      rescueStationName: selectedStation?.name,
     });
     setSuccess(true);
   };
@@ -250,25 +257,26 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
 
           <section className="order-detail-services quote-inbox__form" aria-label="Thông tin báo giá">
             <p className="order-detail-services__title">Thông tin báo giá</p>
-            <div className="quote-form-field">
-              <label className="dls-label">
-                Có mặt (phút)<span className="dls-required">*</span>
-              </label>
-              <div className="quote-input-icon-wrap">
-                <Clock size={18} strokeWidth={1.75} />
-                <input
-                  className="quote-input-icon"
-                  inputMode="numeric"
-                  value={etaMinutes}
-                  onChange={(e) => setEtaMinutes(e.target.value.replace(/\D/g, ''))}
-                  placeholder="30"
-                />
-              </div>
+            <div className="quote-form-field quote-form-field--station">
+              <DlsSelectField
+                label="Trạm cứu hộ"
+                required
+                value={selectedStation?.name ?? ''}
+                options={MOCK_RESCUE_STATIONS.map((station) => station.name)}
+                onChange={(name) => {
+                  const station = MOCK_RESCUE_STATIONS.find((item) => item.name === name);
+                  setStationId(station?.id ?? '');
+                }}
+                placeholder="Chọn trạm cứu hộ"
+                sheetTitle="Chọn trạm cứu hộ"
+                searchable
+                searchPlaceholder="Tìm tên trạm"
+              />
             </div>
 
             <div className="quote-form-field">
               <label className="dls-label">
-                Tài xế báo giá<span className="dls-required">*</span>
+                Tài xế cứu hộ<span className="dls-required">*</span>
               </label>
               <select
                 className="quote-select"
@@ -284,7 +292,7 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
             </div>
 
             {showVehicle && (
-              <div className="quote-form-field quote-form-field--flush">
+              <div className="quote-form-field">
                 <label className="dls-label">
                   Xe cứu hộ<span className="dls-required">*</span>
                 </label>
@@ -301,6 +309,22 @@ const QuoteInboxPanel: React.FC<QuoteInboxPanelProps> = ({
                 </select>
               </div>
             )}
+
+            <div className="quote-form-field quote-form-field--flush">
+              <label className="dls-label">
+                Có mặt (phút)<span className="dls-required">*</span>
+              </label>
+              <div className="quote-input-icon-wrap">
+                <Clock size={18} strokeWidth={1.75} />
+                <input
+                  className="quote-input-icon"
+                  inputMode="numeric"
+                  value={etaMinutes}
+                  onChange={(e) => setEtaMinutes(e.target.value.replace(/\D/g, ''))}
+                  placeholder="30"
+                />
+              </div>
+            </div>
           </section>
         </div>
       </div>

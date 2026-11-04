@@ -1,3 +1,4 @@
+import { MOCK_QUOTE_DRIVERS, MOCK_RESCUE_STATIONS } from '../data/mockQuoteResources';
 import { FilterState, orderKindOf, QuoteOrder, QuoteStatus, RescueOrder } from '../types';
 
 function parseDdMmYyyy(value: string): Date | null {
@@ -43,7 +44,8 @@ export function isFilterActive(filter: FilterState, includeServiceTypes = true):
     filter.customerTypes.length > 0 ||
     filter.orderKinds.length > 0 ||
     filter.driverIds.length > 0 ||
-    filter.vehiclePlates.length > 0
+    filter.vehiclePlates.length > 0 ||
+    filter.stationIds.length > 0
   );
 }
 
@@ -61,6 +63,7 @@ export function countActiveFilterCriteria(
   if (filter.orderKinds.length > 0) count += 1;
   if (filter.driverIds.length > 0) count += 1;
   if (filter.vehiclePlates.length > 0) count += 1;
+  if (filter.stationIds.length > 0) count += 1;
   return count;
 }
 
@@ -157,6 +160,20 @@ export function filterQuoteOrders(orders: QuoteOrder[], filter: FilterState): Qu
 
     if (filter.statuses.length > 0 && !quoteStatusMatches(order.quoteStatus, filter.statuses)) {
       return false;
+    }
+
+    if (filter.stationIds.length > 0) {
+      const stationNames = MOCK_RESCUE_STATIONS.filter((station) =>
+        filter.stationIds.includes(station.id),
+      ).map((station) => station.name);
+      if (!order.rescueStationName || !stationNames.includes(order.rescueStationName)) return false;
+    }
+
+    if (filter.driverIds.length > 0) {
+      const driverNames = MOCK_QUOTE_DRIVERS.filter((driver) =>
+        filter.driverIds.includes(driver.id),
+      ).map((driver) => driver.name);
+      if (!order.quotedDriverName || !driverNames.includes(order.quotedDriverName)) return false;
     }
 
     const orderDate = getOrderCreatedDate(order);

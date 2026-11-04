@@ -1,11 +1,10 @@
 import React from 'react';
-import { ChevronDown, Flag, MapPin } from 'lucide-react';
-import { DlsStatusBadge, type DlsStatusVariant } from '@dls/components';
-import AddressMapLink from './AddressMapLink';
-import RescuePhotosSection from './RescuePhotosSection';
+import { Building2, Car, ChevronRight, ChevronUp, Flag, Headset, MapPin, RefreshCw, User } from 'lucide-react';
 import { isTowQuote, QUOTE_STATUS_LABELS, QuoteOrder, QuoteStatus } from '../types';
 
-function quoteStatusVariant(status: QuoteStatus): DlsStatusVariant {
+type StatusTone = 'info' | 'success' | 'danger' | 'warning';
+
+function quoteStatusTone(status: QuoteStatus): StatusTone {
   if (status === 'tu-choi' || status === 'rejected' || status === 'da-huy') return 'danger';
   if (status === 'het-han' || status === 'cho-bao-gia') return 'warning';
   if (status === 'da-phan-cong') return 'info';
@@ -16,88 +15,113 @@ function formatPlateDisplay(plate: string): string {
   return plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 }
 
+function formatMoney(value: number): string {
+  return `${value.toLocaleString('vi-VN')} đ`;
+}
+
 const QuoteHistoryRow: React.FC<{ order: QuoteOrder }> = ({ order }) => {
   const [open, setOpen] = React.useState(false);
-  const isTow = isTowQuote(order);
-  const photos = order.incidentPhotos ?? [];
-  const services = order.services?.length ? order.services : [order.serviceName];
+  const isTow = isTowQuote(order) && Boolean(order.towDestination);
+  const tone = quoteStatusTone(order.quoteStatus);
+  const plate = formatPlateDisplay(order.plate);
+  const vehicle = `${order.brand} ${order.model}`.trim();
+  const rescueVehicle = [
+    order.rescueVehiclePlate ? formatPlateDisplay(order.rescueVehiclePlate) : '',
+    order.rescueVehicleType ?? '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <article className={`quote-history-row ${open ? 'quote-history-row--open' : ''}`}>
+    <article className={`quote-history-card${open ? ' quote-history-card--open' : ''}`}>
       <button
         type="button"
-        className="quote-history-row__head"
-        onClick={() => setOpen((o) => !o)}
+        className="quote-history-card__head"
+        onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
       >
-        <div className="quote-history-row__head-text">
-          <div className="quote-history-row__identity">
-            <span className="quote-history-row__plate">{formatPlateDisplay(order.plate)}</span>
-            <DlsStatusBadge
-              label={QUOTE_STATUS_LABELS[order.quoteStatus]}
-              variant={quoteStatusVariant(order.quoteStatus)}
-              showDot={false}
-            />
-          </div>
+        <span className="quote-history-card__car" aria-hidden>
+          <Car size={18} strokeWidth={2} />
+        </span>
+        <span className="quote-history-card__identity">
+          <strong>{plate}</strong>
+          <span>{vehicle}</span>
+        </span>
+        <span className="quote-history-card__aside">
+          <span className={`quote-history-card__status quote-history-card__status--${tone}`}>
+            {order.quoteStatus === 'da-phan-cong' && <RefreshCw size={12} strokeWidth={2.25} />}
+            {QUOTE_STATUS_LABELS[order.quoteStatus]}
+          </span>
           {order.quotedPrice != null && (
-            <p className="quote-history-row__price">
-              {order.quotedPrice.toLocaleString('vi-VN')} đ
-              {order.quotedEtaMinutes != null && ` · ${order.quotedEtaMinutes} phút`}
-            </p>
+            <span className="quote-history-card__amount">{formatMoney(order.quotedPrice)}</span>
           )}
-        </div>
-        <ChevronDown
-          size={18}
-          className={`quote-history-row__chevron ${open ? 'quote-history-row__chevron--open' : ''}`}
-        />
+        </span>
+        {open ? (
+          <ChevronUp size={16} className="quote-history-card__chevron" />
+        ) : (
+          <ChevronRight size={16} className="quote-history-card__chevron" />
+        )}
       </button>
 
       {open && (
-        <div className="quote-history-row__detail">
-          {photos.length > 0 && (
-            <RescuePhotosSection
-              photos={{ 'hien-truong': photos }}
-              title="Hình ảnh sự cố"
-              compact
-              bare
-            />
-          )}
-
-          <div className="quote-history-row__services">
-            <p>Dịch vụ</p>
-            <span>{services.join(', ')}</span>
+        <div className="quote-history-card__detail">
+          <div className="quote-history-card__panel">
+            <p className="quote-history-card__addr">
+              <MapPin size={14} strokeWidth={2} />
+              <span>
+                <em>Vị trí sự cố</em>
+                {order.address}
+              </span>
+            </p>
+            {isTow && (
+              <p className="quote-history-card__addr">
+                <Flag size={14} strokeWidth={2} />
+                <span>
+                  <em>Điểm kéo xe về</em>
+                  {order.towDestination}
+                </span>
+              </p>
+            )}
           </div>
 
-          <ul className="rescue-sheet__stops quote-history-row__stops">
-            <li className="rescue-sheet__stop">
-              <span className="rescue-sheet__stop-icon rescue-sheet__stop-icon--pickup" aria-hidden>
-                <MapPin size={15} strokeWidth={2.25} />
-              </span>
-              <div className="rescue-sheet__stop-body">
-                <span className="rescue-sheet__stop-label">Điểm cứu hộ · {order.distanceKm} km</span>
-                <AddressMapLink address={order.address} />
-              </div>
-            </li>
-            {isTow && order.towDestination && (
-              <li className="rescue-sheet__stop">
-                <span className="rescue-sheet__stop-icon rescue-sheet__stop-icon--tow" aria-hidden>
-                  <Flag size={14} strokeWidth={2.25} />
-                </span>
-                <div className="rescue-sheet__stop-body">
-                  <span className="rescue-sheet__stop-label">
-                    Kéo đến{order.towKm != null ? ` · ${order.towKm} km` : ''}
+          {(order.quotedDriverName || rescueVehicle || order.rescueStationName) && (
+            <div className="quote-history-card__assignment">
+              {order.quotedDriverName && (
+                <p className="quote-history-card__addr">
+                  <User size={14} strokeWidth={2} />
+                  <span>
+                    <em>Tài xế</em>
+                    {order.quotedDriverName}
                   </span>
-                  <AddressMapLink address={order.towDestination} />
-                </div>
-              </li>
-            )}
-          </ul>
+                </p>
+              )}
+              {rescueVehicle && (
+                <p className="quote-history-card__addr">
+                  <Car size={14} strokeWidth={2} />
+                  <span>
+                    <em>Xe cứu hộ</em>
+                    {rescueVehicle}
+                  </span>
+                </p>
+              )}
+              {order.rescueStationName && (
+                <p className="quote-history-card__addr">
+                  <Building2 size={14} strokeWidth={2} />
+                  <span>
+                    <em>Trạm cứu hộ</em>
+                    {order.rescueStationName}
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
 
-          {order.quotedDriverName && (
-            <p className="quote-history-row__meta">
-              {order.quotedDriverName}
-              {order.rescueVehiclePlate && ` · ${order.rescueVehiclePlate}`}
-            </p>
+          {order.serviceName && (
+            <div className="quote-history-card__service">
+              <Headset size={16} strokeWidth={2} />
+              <span>{order.serviceName}</span>
+              <ChevronRight size={16} />
+            </div>
           )}
         </div>
       )}

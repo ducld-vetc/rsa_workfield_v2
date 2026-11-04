@@ -20,6 +20,7 @@ const EMPTY_FILTER: FilterState = {
   orderKinds: [],
   driverIds: [],
   vehiclePlates: [],
+  stationIds: [],
 };
 
 import { MOCK_QUOTE_DRIVERS } from '../data/mockQuoteResources';

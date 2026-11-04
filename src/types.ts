@@ -40,6 +40,7 @@ export interface QuoteOrder {
   quotedDriverPhone?: string;
   rescueVehiclePlate?: string;
   rescueVehicleType?: string;
+  rescueStationName?: string;
   /** Mô tả ngắn sự cố */
   condition?: string;
   /** Mô tả chi tiết sự cố */
@@ -407,6 +408,7 @@ export interface FilterState {
   orderKinds: string[];
   driverIds: string[];
   vehiclePlates: string[];
+  stationIds: string[];
 }
 
 export interface NotificationItem {

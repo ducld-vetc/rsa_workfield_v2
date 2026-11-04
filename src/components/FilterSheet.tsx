@@ -6,7 +6,11 @@ import {
   DlsSheetHeader,
   DlsTextField,
 } from '@dls/components';
-import { MOCK_QUOTE_DRIVERS, MOCK_RESCUE_VEHICLES } from '../data/mockQuoteResources';
+import {
+  MOCK_QUOTE_DRIVERS,
+  MOCK_RESCUE_STATIONS,
+  MOCK_RESCUE_VEHICLES,
+} from '../data/mockQuoteResources';
 import {
   CUSTOMER_KIND_LABELS,
   CustomerKind,
@@ -75,7 +79,10 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
     onChange({ ...value, statuses: Array.from(set) });
   };
 
-  const toggleList = (key: 'customerTypes' | 'orderKinds' | 'driverIds' | 'vehiclePlates', id: string) => {
+  const toggleList = (
+    key: 'customerTypes' | 'orderKinds' | 'driverIds' | 'vehiclePlates' | 'stationIds',
+    id: string,
+  ) => {
     const set = new Set(value[key]);
     if (set.has(id)) set.delete(id);
     else set.add(id);
@@ -179,6 +186,56 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
                     />
                   ))}
                 </div>
+              </div>
+            </>
+          )}
+          {mode === 'quote' && (
+            <>
+              <div className="dls-filter-section">
+                <label className="dls-label" htmlFor="quote-filter-station">
+                  Trạm
+                </label>
+                <select
+                  id="quote-filter-station"
+                  className="dls-select"
+                  value={value.stationIds[0] ?? ''}
+                  onChange={(event) =>
+                    onChange({
+                      ...value,
+                      stationIds: event.target.value ? [event.target.value] : [],
+                    })
+                  }
+                >
+                  <option value="">Tất cả</option>
+                  {MOCK_RESCUE_STATIONS.map((station) => (
+                    <option key={station.id} value={station.id}>
+                      {station.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="dls-filter-section">
+                <label className="dls-label" htmlFor="quote-filter-driver">
+                  Tài xế
+                </label>
+                <select
+                  id="quote-filter-driver"
+                  className="dls-select"
+                  value={value.driverIds[0] ?? ''}
+                  onChange={(event) =>
+                    onChange({
+                      ...value,
+                      driverIds: event.target.value ? [event.target.value] : [],
+                    })
+                  }
+                >
+                  <option value="">Tất cả</option>
+                  {MOCK_QUOTE_DRIVERS.map((driver) => (
+                    <option key={driver.id} value={driver.id}>
+                      {driver.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </>
           )}

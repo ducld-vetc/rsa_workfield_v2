@@ -932,6 +932,10 @@
   padding: var(--dls-space-8) 0;
 }
 
+.dls-filter-section .dls-select {
+  margin-top: var(--dls-space-4);
+}
+
 .dls-filter-section + .dls-filter-section {
   border-top: none;
   border-image: none;

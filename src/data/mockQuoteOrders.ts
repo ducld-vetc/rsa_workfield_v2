@@ -1,7 +1,7 @@
 import { QuoteOrder } from '../types';
 import { mockPhotoUrl } from '../utils/mockPhotoUrl';
 
-export const MOCK_QUOTE_ORDERS: QuoteOrder[] = [
+const QUOTE_ORDER_SEED: QuoteOrder[] = [
   {
     id: 'q1',
     orderCode: 'RS2026260312808',
@@ -306,3 +306,16 @@ export const MOCK_QUOTE_ORDERS: QuoteOrder[] = [
     rescueVehicleType: 'Xe cẩu bánh vòng',
   },
 ];
+
+const STATION_BY_DRIVER: Record<string, string> = {
+  'Nguyễn Văn Hùng': 'Trạm cứu hộ Thanh Xuân',
+  'Trần Minh Tuấn': 'Trạm cứu hộ Hà Đông',
+  'Lê Thị Mai': 'Trạm cứu hộ Quận 1',
+};
+
+export const MOCK_QUOTE_ORDERS: QuoteOrder[] = QUOTE_ORDER_SEED.map((order) => ({
+  ...order,
+  rescueStationName:
+    order.rescueStationName ??
+    (order.quotedDriverName ? STATION_BY_DRIVER[order.quotedDriverName] : undefined),
+}));
