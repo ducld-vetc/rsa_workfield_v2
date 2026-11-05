@@ -64,7 +64,7 @@ export const AcceptOdoSheet: React.FC<AcceptOdoSheetProps> = ({
           />
         </div>
         <div className="dls-sheet-footer dls-sheet-footer--single">
-          <DlsBrandButton onClick={submit}>Nhận đơn</DlsBrandButton>
+          <DlsBrandButton onClick={submit}>Bắt đầu di chuyển</DlsBrandButton>
         </div>
         <DlsHomeIndicator />
       </div>

@@ -13,7 +13,7 @@ import {
   Siren,
 } from 'lucide-react';
 import RatingSheet from '../components/RatingSheet';
-import { CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOdoSheet';
+import { AcceptOdoSheet, CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOdoSheet';
 import RescueMap from '../components/RescueMap';
 import AddressMapLink from '../components/AddressMapLink';
 import MainShell from '../layouts/MainShell';
@@ -24,6 +24,7 @@ import { getRescueEmptyCopy, getRescueTabActiveJob, isMissionOfferedToMe } from 
 import {
   consumePendingRating,
   getStageAction,
+  isProcessSetComplete,
   markPendingRating,
   rescueCameraPath,
 } from '../utils/rescueStage';
@@ -94,6 +95,7 @@ const RescuePage: React.FC = () => {
   } = useApp();
   const [ratingOpen, setRatingOpen] = React.useState(false);
   const [completeOpen, setCompleteOpen] = React.useState(false);
+  const [startOdoOpen, setStartOdoOpen] = React.useState(false);
   const handleRating = () => setRatingOpen(false);
 
   React.useEffect(() => {
@@ -168,11 +170,20 @@ const RescuePage: React.FC = () => {
 
   const stage = activeJob.jobStage ?? 'da-nhan';
   const hasTow = Boolean(activeJob.towDestination);
-  const action = getStageAction(stage, hasTow);
+  const processPhotosDone = isProcessSetComplete(activeJob);
+  const action = getStageAction(stage, hasTow, processPhotosDone);
   const secondaryActions = getSecondaryActions(stage, activeJob, navigate);
   const customerPhone = getCustomerPhone(activeJob);
 
   const advanceStage = () => {
+    if (action.needsStartOdo) {
+      setStartOdoOpen(true);
+      return;
+    }
+    if (action.captureOnly && action.photoSet) {
+      navigate(rescueCameraPath(activeJob.id, action.photoSet, true));
+      return;
+    }
     if (action.needsCompleteSheet) {
       setCompleteOpen(true);
       return;
@@ -180,6 +191,11 @@ const RescuePage: React.FC = () => {
     if (!action.next) return;
     updateOrder(activeJob.id, { jobStage: action.next });
     if (action.photoSet) navigate(rescueCameraPath(activeJob.id, action.photoSet, true));
+  };
+
+  const confirmStartMove = (odoKm: string) => {
+    updateOrder(activeJob.id, { startOdoKm: odoKm, jobStage: 'dang-di-chuyen' });
+    setStartOdoOpen(false);
   };
 
   const confirmComplete = (input: CompleteRescueInput) => {
@@ -327,6 +343,12 @@ const RescuePage: React.FC = () => {
         </div>
       </div>
 
+      <AcceptOdoSheet
+        open={startOdoOpen}
+        initialOdo={activeJob.startOdoKm}
+        onClose={() => setStartOdoOpen(false)}
+        onConfirm={confirmStartMove}
+      />
       <CompleteRescueSheet
         open={completeOpen}
         onClose={() => setCompleteOpen(false)}

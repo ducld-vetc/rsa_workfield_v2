@@ -2,13 +2,14 @@ import React from 'react';
 import { Camera, MapPin, Navigation, Phone, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import RatingSheet from '../components/RatingSheet';
-import { CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOdoSheet';
+import { AcceptOdoSheet, CompleteRescueSheet, CompleteRescueInput } from '../components/RescueOdoSheet';
 import AddressMapLink from '../components/AddressMapLink';
 import { useApp } from '../context/AppContext';
 import { DlsHomeIndicator } from '@dls/components';
 import { JOB_STAGE_LABELS } from '../types';
 import {
   getStageAction,
+  isProcessSetComplete,
   markPendingRating,
   rescueCameraPath,
   suggestedPhotoSet,
@@ -21,6 +22,7 @@ const JobNavigationPage: React.FC = () => {
   const order = getOrder(id ?? '');
   const [ratingOpen, setRatingOpen] = React.useState(false);
   const [completeOpen, setCompleteOpen] = React.useState(false);
+  const [startOdoOpen, setStartOdoOpen] = React.useState(false);
 
   if (!order) {
     return (
@@ -32,11 +34,19 @@ const JobNavigationPage: React.FC = () => {
 
   const stage = order.jobStage ?? 'da-nhan';
   const hasTow = Boolean(order.towDestination);
-  const action = getStageAction(stage, hasTow);
+  const action = getStageAction(stage, hasTow, isProcessSetComplete(order));
   const isPickup = stage === 'da-nhan' || stage === 'dang-di-chuyen';
   const isDropoff = stage === 'dang-keo' || stage === 'da-keo-toi';
 
   const advanceStage = () => {
+    if (action.needsStartOdo) {
+      setStartOdoOpen(true);
+      return;
+    }
+    if (action.captureOnly && action.photoSet) {
+      navigate(rescueCameraPath(order.id, action.photoSet, true));
+      return;
+    }
     if (action.needsCompleteSheet) {
       setCompleteOpen(true);
       return;
@@ -44,6 +54,11 @@ const JobNavigationPage: React.FC = () => {
     if (!action.next) return;
     updateOrder(order.id, { jobStage: action.next });
     if (action.photoSet) navigate(rescueCameraPath(order.id, action.photoSet, true));
+  };
+
+  const confirmStartMove = (odoKm: string) => {
+    updateOrder(order.id, { startOdoKm: odoKm, jobStage: 'dang-di-chuyen' });
+    setStartOdoOpen(false);
   };
 
   const confirmComplete = (input: CompleteRescueInput) => {
@@ -152,6 +167,12 @@ const JobNavigationPage: React.FC = () => {
         )}
       </div>
 
+      <AcceptOdoSheet
+        open={startOdoOpen}
+        initialOdo={order.startOdoKm}
+        onClose={() => setStartOdoOpen(false)}
+        onConfirm={confirmStartMove}
+      />
       <CompleteRescueSheet
         open={completeOpen}
         onClose={() => setCompleteOpen(false)}

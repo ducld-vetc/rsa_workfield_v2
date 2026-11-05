@@ -185,8 +185,8 @@ export const RESCUE_SET_META: {
     short: 'Bộ B',
     tab: 'Xử lý',
     title: 'Quá trình xử lý',
-    lead: 'Nên chụp sau khi ấn Bắt đầu kéo xe: xe đã lên sàn, dây đã chằng, trước khi rời hiện trường.',
-    leadOnSite: 'Nên chụp trong lúc xử lý tại chỗ, trước khi hoàn thành. Ảnh lên sàn và dây neo chỉ dùng khi có kéo xe.',
+    lead: 'Chụp đủ trước khi bắt đầu kéo xe. Có ảnh thao tác, xe lên sàn và dây neo.',
+    leadOnSite: 'Chụp đủ trước khi hoàn thành cứu hộ. Ảnh lên sàn và dây neo chỉ dùng khi có kéo xe.',
   },
   {
     id: 'C',
