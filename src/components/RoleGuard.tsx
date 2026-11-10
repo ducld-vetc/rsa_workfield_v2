@@ -7,6 +7,7 @@ const DEFAULT_HOME: Record<DriverRole, string> = {
   'quote-rescue': '/home',
   'quote-only': '/quotes',
   'rescue-only': '/home',
+  admin: '/manage',
 };
 
 export const RoleHomeRedirect: React.FC = () => {

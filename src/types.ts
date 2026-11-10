@@ -1,4 +1,4 @@
-export type DriverRole = 'quote-rescue' | 'quote-only' | 'rescue-only';
+export type DriverRole = 'quote-rescue' | 'quote-only' | 'rescue-only' | 'admin';
 
 export type QuoteStatus =
   | 'cho-bao-gia'
@@ -53,6 +53,7 @@ export const DRIVER_ROLE_LABELS: Record<DriverRole, string> = {
   'quote-rescue': 'Vừa báo giá, vừa cứu hộ',
   'quote-only': 'Chỉ báo giá',
   'rescue-only': 'Chỉ cứu hộ',
+  admin: 'Quản trị',
 };
 
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
@@ -207,6 +208,31 @@ export interface OrderAssignment {
   isActive?: boolean;
 }
 
+/** Một dòng trong nhật ký điều phối. Có thể có nhiều báo giá và nhiều lượt nhận. */
+export type DispatchLogKind =
+  | 'quote'
+  | 'quote-reject'
+  | 'assign'
+  | 'accept'
+  | 'reject'
+  | 'expire'
+  | 'transfer';
+
+export interface DispatchLogEntry {
+  id: string;
+  at: string;
+  kind: DispatchLogKind;
+  /** Đơn vị báo giá hoặc người nhận / từ chối */
+  actor: string;
+  /** Lý do hoặc ghi chú, không gộp giá, tài xế, xe */
+  note?: string;
+  /** Báo giá được chọn để điều xe */
+  selected?: boolean;
+  price?: string;
+  driverName?: string;
+  vehiclePlate?: string;
+}
+
 export interface FieldOrderInput {
   plate: string;
   brand: string;
@@ -280,6 +306,8 @@ export interface RescueOrder {
   activeHandlerDriverName?: string;
   /** Lịch sử phân công theo từng tài xế */
   assignments?: OrderAssignment[];
+  /** Nhật ký báo giá và nhận đơn, mỗi đối tượng một dòng */
+  dispatchLog?: DispatchLogEntry[];
   /** Tiến độ di chuyển tới điểm (0–100, càng cao càng gần) */
   travelProgress?: number;
   delegatedVehiclePlate?: string;

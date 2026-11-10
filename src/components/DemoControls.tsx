@@ -6,7 +6,7 @@ import { MOCK_QUOTE_DRIVERS } from '../data/mockQuoteResources';
 import { DRIVER_ROLE_LABELS, DriverRole } from '../types';
 import { resetOnboardingDone } from '../utils/onboarding';
 
-const ROLES: DriverRole[] = ['quote-rescue', 'quote-only', 'rescue-only'];
+const ROLES: DriverRole[] = ['quote-rescue', 'quote-only', 'rescue-only', 'admin'];
 
 const DemoControls: React.FC = () => {
   const navigate = useNavigate();

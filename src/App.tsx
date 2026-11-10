@@ -24,6 +24,7 @@ import NewPasswordPage from './pages/NewPasswordPage';
 import NotificationDetailPage from './pages/NotificationDetailPage';
 import NotificationsPage from './pages/NotificationsPage';
 import OrderDetailPage from './pages/OrderDetailPage';
+import DispatchLogPage from './pages/DispatchLogPage';
 import OtpPage from './pages/OtpPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentWaitPage from './pages/PaymentWaitPage';
@@ -60,7 +61,9 @@ const SignInRedirect: React.FC<{
       ? '/onboarding'
       : driverRole === 'quote-only'
         ? '/quotes'
-        : '/home';
+        : driverRole === 'admin'
+          ? '/manage'
+          : '/home';
     navigate(dest);
   };
 
@@ -129,7 +132,7 @@ const AppRoutes: React.FC = () => {
           path="/quotes"
           element={
             <ProtectedRoute>
-              <RoleGuard allow={['quote-rescue', 'quote-only']}>
+              <RoleGuard allow={['quote-rescue', 'quote-only', 'admin']}>
                 <QuoteListPage
                   onOpenFilter={() => {
                     setFilterMode('quote');
@@ -145,7 +148,7 @@ const AppRoutes: React.FC = () => {
           path="/quotes/:id"
           element={
             <ProtectedRoute>
-              <RoleGuard allow={['quote-rescue', 'quote-only']}>
+              <RoleGuard allow={['quote-rescue', 'quote-only', 'admin']}>
                 <QuoteFormPage />
               </RoleGuard>
             </ProtectedRoute>
@@ -155,7 +158,7 @@ const AppRoutes: React.FC = () => {
           path="/manage"
           element={
             <ProtectedRoute>
-              <RoleGuard allow={['quote-rescue', 'rescue-only', 'quote-only']}>
+              <RoleGuard allow={['quote-rescue', 'rescue-only', 'quote-only', 'admin']}>
                 <ActivityPage
                   onOpenFilter={() => {
                     setFilterMode('rescue');
@@ -176,6 +179,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route path="/activity" element={<Navigate to="/manage" replace />} />
+        <Route path="/orders/:id/dispatch" element={<ProtectedRoute><DispatchLogPage /></ProtectedRoute>} />
         <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
         <Route path="/jobs/:id" element={<ProtectedRoute><JobNavigationPage /></ProtectedRoute>} />
         <Route path="/jobs/:id/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />

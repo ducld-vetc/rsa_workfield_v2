@@ -10,6 +10,7 @@ const HOME: Record<DriverRole, string> = {
   'quote-rescue': '/home',
   'quote-only': '/quotes',
   'rescue-only': '/home',
+  admin: '/manage',
 };
 
 const SWIPE_MIN_PX = 56;

@@ -1,6 +1,6 @@
 import React from 'react';
-import { ArrowLeftRight, Camera, ChevronLeft, Clock, Flag, MapPin, Phone, Wrench } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeftRight, Camera, ChevronLeft, ChevronRight, Clock, Flag, MapPin, Phone, Wrench } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import MissionAssignSheet from '../components/MissionAssignSheet';
 import { ConfirmDialog } from '../components/DetailRow';
 import ReasonSheet from '../components/ReasonSheet';
@@ -16,6 +16,7 @@ import { RescueOrder, STATUS_LABELS } from '../types';
 import {
   canReassignDriver,
   canReassignOrder,
+  isAdminRole,
   isMissionOfferedToMe,
   patchAcceptOrder,
   patchAssignOrder,
@@ -65,6 +66,7 @@ function getEtaLabel(order: RescueOrder): string | null {
 const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     getOrder,
     updateOrder,
@@ -88,7 +90,13 @@ const OrderDetailPage: React.FC = () => {
   }, [order?.towDestination, order?.id]);
 
   const goBack = () => {
-    if (window.history.length > 1) navigate(-1);
+    const fromState = (location.state as { back?: string } | null)?.back;
+    if (fromState && fromState !== location.pathname) {
+      navigate(fromState);
+      return;
+    }
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
     else navigate('/manage');
   };
 
@@ -103,13 +111,14 @@ const OrderDetailPage: React.FC = () => {
   const isPending = order.status === 'cho-nhan';
   const isActive = order.status === 'dang-cuu-ho';
   const isQuoteOnly = driverRole === 'quote-only';
+  const isAdmin = isAdminRole(driverRole);
   const offeredToMe = isMissionOfferedToMe(order, currentDriverId);
   const handlingMine = isActive && order.activeHandlerDriverId === currentDriverId;
   const waitingPartnerName =
     isPending && !offeredToMe ? order.delegatedToDriverName : undefined;
   const canReassign = canReassignDriver(driverRole) && canReassignOrder(order);
   const canEditTow = !isQuoteOnly && (isPending || isActive);
-  const hasRescueFooter = !isQuoteOnly && (offeredToMe || handlingMine);
+  const hasRescueFooter = !isQuoteOnly && (offeredToMe || (!isAdmin && handlingMine));
   const hasAssignFooter = isQuoteOnly && canReassign;
   const hasFooter = hasRescueFooter || hasAssignFooter || Boolean(waitingPartnerName);
   const variant = STATUS_VARIANT[order.status];
@@ -138,7 +147,7 @@ const OrderDetailPage: React.FC = () => {
       ...patchAcceptOrder(order, currentDriverId, currentDriverName),
       acceptCountdown: undefined,
     });
-    navigate('/home');
+    navigate(isAdmin ? '/manage' : '/home');
   };
 
   const handleReject = (reason: string) => {
@@ -356,6 +365,17 @@ const OrderDetailPage: React.FC = () => {
               )}
             </ul>
 
+            {isAdmin && (
+              <button
+                type="button"
+                className="order-detail-entry"
+                onClick={() => navigate(`/orders/${order.id}/dispatch`)}
+              >
+                <span>Điều phối</span>
+                <ChevronRight size={18} strokeWidth={2} />
+              </button>
+            )}
+
             <div className="order-detail-services">
               <p className="order-detail-services__title">Dịch vụ yêu cầu</p>
               {serviceLines.map((s) => (
@@ -403,6 +423,17 @@ const OrderDetailPage: React.FC = () => {
           {hasRescueFooter && isPending && (
             <div className="order-detail-sheet__footer">
               <div className="rescue-sheet__actions-row">
+                {canReassign && (
+                  <button
+                    type="button"
+                    className="rescue-sheet__action-btn rescue-sheet__action-btn--icon"
+                    onClick={() => setAssignOpen(true)}
+                    aria-label="Phân công tài xế khác"
+                    title="Phân công tài xế khác"
+                  >
+                    <ArrowLeftRight size={20} strokeWidth={1.75} />
+                  </button>
+                )}
                 <button
                   type="button"
                   className="rescue-sheet__action-btn rescue-sheet__action-btn--ghost"
@@ -415,7 +446,7 @@ const OrderDetailPage: React.FC = () => {
                   className="grab-btn-accept rescue-sheet__action-btn--primary"
                   onClick={handleAccept}
                 >
-                  Nhận ngay
+                  Nhận đơn
                 </button>
               </div>
             </div>

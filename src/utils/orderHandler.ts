@@ -85,11 +85,15 @@ export function isStationManagerView(driverRole: DriverRole): boolean {
 
 /** Xem danh sách đơn của cả đơn vị (quản lý trạm + chỉ báo giá). */
 export function isUnitOrdersView(driverRole: DriverRole): boolean {
-  return driverRole === 'quote-rescue' || driverRole === 'quote-only';
+  return driverRole === 'quote-rescue' || driverRole === 'quote-only' || driverRole === 'admin';
 }
 
 export function canReassignDriver(driverRole: DriverRole): boolean {
-  return driverRole === 'quote-rescue' || driverRole === 'quote-only';
+  return driverRole === 'quote-rescue' || driverRole === 'quote-only' || driverRole === 'admin';
+}
+
+export function isAdminRole(driverRole: DriverRole): boolean {
+  return driverRole === 'admin';
 }
 
 export function canReassignOrder(order: RescueOrder): boolean {

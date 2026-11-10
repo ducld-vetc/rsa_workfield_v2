@@ -1,10 +1,9 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { DlsChip, FilterIcon } from '@dls/components';
 import { EmptyState } from '../components/EmptyState';
 import MissionAssignSheet from '../components/MissionAssignSheet';
-import MissionTaskCard from '../components/MissionTaskCard';
 import ReasonSheet from '../components/ReasonSheet';
 import { ConfirmDialog } from '../components/DetailRow';
 import ActivityOrderRow from '../components/ActivityOrderRow';
@@ -23,6 +22,7 @@ import { orderLineOf, rescueChannelOf, type OrderLine, type RescueChannel } from
 import {
   canReassignDriver,
   canReassignOrder,
+  isAdminRole,
   isMissionOfferedToMe,
   isOrderVisibleInActivity,
   patchAcceptOrder,
@@ -53,6 +53,7 @@ interface ActivityPageProps {
 
 const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     orders,
@@ -67,16 +68,17 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     emptyFilter,
   } = useApp();
 
-  const [rejectId, setRejectId] = React.useState<string | null>(null);
   const [assignId, setAssignId] = React.useState<string | null>(null);
   const [assignSuccess, setAssignSuccess] = React.useState<string | null>(null);
+  const [rejectId, setRejectId] = React.useState<string | null>(null);
   const [busyAcceptOpen, setBusyAcceptOpen] = React.useState(false);
 
   const activeJob = orders.find(
-    (o) =>
-      o.status === 'dang-cuu-ho' &&
-      o.activeHandlerDriverId === currentDriverId,
+    (order) =>
+      order.status === 'dang-cuu-ho' &&
+      order.activeHandlerDriverId === currentDriverId,
   );
+
   const roleOrders = demoHasOrders
     ? orders.filter((order) =>
         isOrderVisibleInActivity(order, driverRole, currentDriverId),
@@ -86,6 +88,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     includeServiceTypes: false,
   });
   const isQuoteOnly = driverRole === 'quote-only';
+  const isAdmin = isAdminRole(driverRole);
   const canAssignToOther = canReassignDriver(driverRole);
   const lineParam = searchParams.get('line');
   const line: 'all' | ManageLine =
@@ -100,9 +103,6 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     if (line === 'cuu-ho' && channel !== 'all' && rescueChannelOf(order) !== channel) return false;
     return true;
   });
-  const assignedMissions = lineOrders
-    .filter((order) => isMissionOfferedToMe(order, currentDriverId))
-    .sort(byUpdatedAtDesc);
   const transportCount = filteredOrders.filter((order) => orderLineOf(order) === 'van-tai').length;
   const vetcCount = filteredOrders.filter(
     (order) => orderLineOf(order) === 'cuu-ho' && rescueChannelOf(order) === 'vetc',
@@ -111,13 +111,8 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     (order) => orderLineOf(order) === 'cuu-ho' && rescueChannelOf(order) === 'noi-bo',
   ).length;
   const sorted = [...lineOrders].sort(byUpdatedAtDesc);
-  const missionIds = new Set(
-    isQuoteOnly ? [] : assignedMissions.map((order) => order.id),
-  );
   const inRescue = sorted.filter(
-    (order) =>
-      (order.status === 'cho-nhan' || order.status === 'dang-cuu-ho') &&
-      !missionIds.has(order.id),
+    (order) => order.status === 'cho-nhan' || order.status === 'dang-cuu-ho',
   );
   const processed = sorted.filter(
     (order) => order.status !== 'cho-nhan' && order.status !== 'dang-cuu-ho',
@@ -140,17 +135,14 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
     const order = orders.find((item) => item.id === id);
     if (!order) return;
     updateOrder(id, patchAcceptOrder(order, currentDriverId, currentDriverName));
-    navigate('/home');
+    navigate(isAdmin ? '/manage' : '/home');
   };
 
   const handleReject = (reason: string) => {
     if (rejectId) {
       const order = orders.find((item) => item.id === rejectId);
       if (order) {
-        updateOrder(
-          rejectId,
-          patchRejectOrder(order, currentDriverId, currentDriverName),
-        );
+        updateOrder(rejectId, patchRejectOrder(order, currentDriverId, currentDriverName));
       }
       setRejectId(null);
     }
@@ -182,11 +174,12 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
   };
 
   const openOrder = (order: (typeof orders)[0]) => {
-    navigate(`/orders/${order.id}`);
+    navigate(`/orders/${order.id}`, {
+      state: { back: `${location.pathname}${location.search}` },
+    });
   };
 
-  const rescueEmpty =
-    assignedMissions.length === 0 && inRescue.length === 0 && processed.length === 0;
+  const rescueEmpty = inRescue.length === 0 && processed.length === 0;
 
   return (
     <MainShell>
@@ -268,7 +261,7 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
           </div>
         )}
 
-        {!isQuoteOnly && !readyForRescue && (
+        {!isQuoteOnly && !isAdmin && !readyForRescue && (
           <div className="dls-alert-inline mission-home__banner" role="status">
             Bạn đang tạm nghỉ — bật sẵn sàng trong mục Tài khoản khi có thể đi cứu hộ.
           </div>
@@ -281,37 +274,26 @@ const ActivityPage: React.FC<ActivityPageProps> = ({ onOpenFilter }) => {
         )}
 
         <div className="grab-activity__scroll">
-          {!isQuoteOnly && assignedMissions.length > 0 && (
-            <section className="mission-home__section" aria-label="Nhiệm vụ được giao">
-              <div className="mission-home__list">
-                {assignedMissions.map((order) => (
-                  <MissionTaskCard
-                    key={order.id}
-                    order={order}
-                    canAssign={canAssignToOther}
-                    acceptDisabled={!readyForRescue}
-                    onAccept={() => tryAccept(order.id)}
-                    onReject={() => setRejectId(order.id)}
-                    onExpire={() => handleExpire(order.id)}
-                    onAssign={() => setAssignId(order.id)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
           {inRescue.length > 0 && (
             <section className="grab-activity__section" aria-label="Đơn đang cứu hộ">
               <div className="grab-activity__list">
-                {inRescue.map((order) => (
-                  <ActivityOrderRow
-                    key={order.id}
-                    order={order}
-                    onClick={() => openOrder(order)}
-                    canAssign={canAssignToOther && canReassignOrder(order)}
-                    onAssign={() => setAssignId(order.id)}
-                  />
-                ))}
+                {inRescue.map((order) => {
+                  const offeredToMe = !isQuoteOnly && isMissionOfferedToMe(order, currentDriverId);
+                  return (
+                    <ActivityOrderRow
+                      key={order.id}
+                      order={order}
+                      onClick={() => openOrder(order)}
+                      canAssign={canAssignToOther && canReassignOrder(order)}
+                      onAssign={() => setAssignId(order.id)}
+                      offeredToMe={offeredToMe}
+                      acceptDisabled={!readyForRescue}
+                      onAccept={offeredToMe ? () => tryAccept(order.id) : undefined}
+                      onReject={offeredToMe ? () => setRejectId(order.id) : undefined}
+                      onExpire={offeredToMe ? () => handleExpire(order.id) : undefined}
+                    />
+                  );
+                })}
               </div>
             </section>
           )}

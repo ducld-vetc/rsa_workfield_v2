@@ -8,12 +8,14 @@ const HOME: Record<DriverRole, string> = {
   'quote-rescue': '/home',
   'quote-only': '/quotes',
   'rescue-only': '/home',
+  admin: '/manage',
 };
 
 const ALLOWED: Record<DriverRole, string[]> = {
   'quote-rescue': ['/home', '/quotes', '/manage', '/activity', '/notifications', '/settings', '/orders', '/jobs', '/change-password', '/extra-costs', '/payment-wait', '/payment-success', '/onboarding'],
   'quote-only': ['/quotes', '/manage', '/activity', '/notifications', '/settings', '/orders', '/change-password', '/onboarding'],
   'rescue-only': ['/home', '/manage', '/activity', '/settings', '/orders', '/jobs', '/change-password', '/extra-costs', '/payment-wait', '/payment-success', '/notifications', '/onboarding'],
+  admin: ['/quotes', '/manage', '/activity', '/notifications', '/settings', '/orders', '/change-password', '/onboarding'],
 };
 
 const PUBLIC_PATHS = [

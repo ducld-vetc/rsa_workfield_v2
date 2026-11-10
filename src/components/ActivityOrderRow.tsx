@@ -1,8 +1,9 @@
 import React from 'react';
-import { Flag, MapPin } from 'lucide-react';
+import { Flag, MapPin, ArrowLeftRight } from 'lucide-react';
 import { DlsStatusBadge } from '@dls/components';
 import OrderHandlerLine from './OrderHandlerLine';
 import AddressMapLink from './AddressMapLink';
+import ProgressCountdownButton from './ProgressCountdownButton';
 import { useApp } from '../context/AppContext';
 import {
   getRescueServiceMode,
@@ -14,6 +15,7 @@ import {
   getActivityStatusDisplay,
   getHandlerDisplay,
 } from '../utils/orderHandler';
+import { parseCountdownSeconds } from '../utils/countdown';
 
 function formatPlateDisplay(plate: string): string {
   return plate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
@@ -44,6 +46,11 @@ interface ActivityOrderRowProps {
   onClick: () => void;
   canAssign?: boolean;
   onAssign?: () => void;
+  offeredToMe?: boolean;
+  acceptDisabled?: boolean;
+  onAccept?: () => void;
+  onReject?: () => void;
+  onExpire?: () => void;
 }
 
 const ActivityOrderRow: React.FC<ActivityOrderRowProps> = ({
@@ -51,6 +58,11 @@ const ActivityOrderRow: React.FC<ActivityOrderRowProps> = ({
   onClick,
   canAssign = false,
   onAssign,
+  offeredToMe = false,
+  acceptDisabled = false,
+  onAccept,
+  onReject,
+  onExpire,
 }) => {
   const { driverRole, currentDriverId } = useApp();
   const isTow = isTowRescueOrder(order);
@@ -58,6 +70,8 @@ const ActivityOrderRow: React.FC<ActivityOrderRowProps> = ({
   const towDistance = getTowDistanceKm(order);
   const statusDisplay = getActivityStatusDisplay(order, driverRole, currentDriverId);
   const handlerDisplay = getHandlerDisplay(order, driverRole, currentDriverId);
+  const countdownSeconds = parseCountdownSeconds(order.acceptCountdown);
+  const showOfferActions = offeredToMe && (onAccept != null || onReject != null);
 
   return (
     <article className={`grab-activity-row-card${canAssign && onAssign ? ' grab-activity-row-card--assignable' : ''}`}>
@@ -139,7 +153,7 @@ const ActivityOrderRow: React.FC<ActivityOrderRowProps> = ({
             </div>
           )}
 
-          {canAssign && onAssign && (
+          {canAssign && onAssign && !showOfferActions && (
             <button
               type="button"
               className="quote-submit-btn grab-activity-row__assign-action"
@@ -153,6 +167,43 @@ const ActivityOrderRow: React.FC<ActivityOrderRowProps> = ({
           )}
         </div>
       </div>
+      {showOfferActions && (
+        <div className="grab-activity-row__actions rescue-sheet__actions-row">
+          {canAssign && onAssign && (
+            <button
+              type="button"
+              className="rescue-sheet__action-btn rescue-sheet__action-btn--icon"
+              onClick={onAssign}
+              aria-label="Phân công tài xế khác"
+              title="Phân công tài xế khác"
+            >
+              <ArrowLeftRight size={20} strokeWidth={1.75} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="rescue-sheet__action-btn rescue-sheet__action-btn--ghost"
+            onClick={onReject}
+          >
+            Từ chối
+          </button>
+          <div className="mission-task-card__accept">
+            <ProgressCountdownButton
+              key={`${order.id}-${countdownSeconds}`}
+              label="Nhận đơn"
+              initialSeconds={countdownSeconds}
+              disabled={acceptDisabled}
+              onClick={() => onAccept?.()}
+              onExpire={onExpire}
+              expireDialog={{
+                title: 'Hết thời gian nhận đơn',
+                message: 'Đơn đã hết hạn nhận. Vui lòng chờ nhiệm vụ tiếp theo.',
+                confirmLabel: 'Đã hiểu',
+              }}
+            />
+          </div>
+        </div>
+      )}
     </article>
   );
 };

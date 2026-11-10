@@ -38,7 +38,7 @@ const BottomTabBar: React.FC = () => {
           { path: '/notifications', label: 'Thông báo', icon: Bell, badge: unread },
           { path: '/settings', label: 'Tài khoản', icon: User },
         ]
-      : driverRole === 'quote-only'
+      : driverRole === 'quote-only' || driverRole === 'admin'
         ? [
             { path: '/quotes', label: 'Báo giá', icon: CalendarDays, badge: pendingQuotes },
             { path: '/manage', label: 'Đơn', icon: ClipboardList },

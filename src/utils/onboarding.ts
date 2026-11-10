@@ -42,6 +42,9 @@ export function getOnboardingSteps(role: DriverRole): OnboardingStep[] {
   if (role === 'rescue-only') {
     return [STEP_ACCEPT, STEP_OPERATE];
   }
+  if (role === 'admin') {
+    return [STEP_TRACK];
+  }
   return [STEP_QUOTE, STEP_ACCEPT, STEP_OPERATE];
 }
 
