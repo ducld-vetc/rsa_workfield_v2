@@ -1,5 +1,5 @@
 export type VehicleAssignment = 'primary' | 'secondary';
-export type VehicleRunStatus = 'ready' | 'repair';
+export type VehicleRunStatus = 'READY' | 'WORKING' | 'MAINTENANCE' | 'STOPPED' | 'INACTIVE';
 export type RepairRequestStatus = 'pending' | 'rejected' | 'ordered';
 
 export interface DriverVehicle {
@@ -192,9 +192,20 @@ export const ASSIGNMENT_LABEL: Record<VehicleAssignment, string> = {
   secondary: 'Xe phụ',
 };
 
+export const VEHICLE_RUN_STATUSES: VehicleRunStatus[] = [
+  'READY',
+  'WORKING',
+  'MAINTENANCE',
+  'STOPPED',
+  'INACTIVE',
+];
+
 export const RUN_STATUS_LABEL: Record<VehicleRunStatus, string> = {
-  ready: 'Sẵn sàng',
-  repair: 'Đang sửa chữa',
+  READY: 'Sẵn sàng',
+  WORKING: 'Đang cứu hộ',
+  MAINTENANCE: 'Sửa chữa',
+  STOPPED: 'Tạm dừng',
+  INACTIVE: 'Ngưng hoạt động',
 };
 
 export const REPAIR_STATUS_LABEL: Record<RepairRequestStatus, string> = {
@@ -222,7 +233,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Hino',
     modelLine: '500 Series',
     station: 'Trạm Hoàng Mai',
-    status: 'ready',
+    status: 'WORKING',
     primaryDriverId: 'd1',
     secondaryDriverId: 'd3',
     parkAddress: 'Sân trạm Hoàng Mai',
@@ -242,7 +253,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Isuzu',
     modelLine: 'FVR',
     station: 'Trạm Hoàng Mai',
-    status: 'repair',
+    status: 'MAINTENANCE',
     primaryDriverId: 'd2',
     secondaryDriverId: 'd1',
     parkAddress: '',
@@ -257,7 +268,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Dongfeng',
     modelLine: 'Hoàng Huy',
     station: 'Trạm Hà Đông',
-    status: 'ready',
+    status: 'READY',
     primaryDriverId: 'd3',
     secondaryDriverId: 'd2',
     parkAddress: 'Bãi xe cổng phụ',
@@ -272,7 +283,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Hino',
     modelLine: '300 Series',
     station: 'Trạm Hoàng Mai',
-    status: 'ready',
+    status: 'READY',
     primaryDriverId: 'd1',
     secondaryDriverId: 'd2',
     parkAddress: 'Sân trước xưởng',
@@ -287,7 +298,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Isuzu',
     modelLine: 'NQR',
     station: 'Trạm Hà Đông',
-    status: 'repair',
+    status: 'MAINTENANCE',
     primaryDriverId: 'd1',
     secondaryDriverId: 'd3',
     parkAddress: '',
@@ -302,7 +313,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Dongfeng',
     modelLine: 'Hoàng Huy',
     station: 'Trạm Hoàng Mai',
-    status: 'ready',
+    status: 'STOPPED',
     primaryDriverId: 'd1',
     secondaryDriverId: 'd2',
     parkAddress: 'Bãi trong',
@@ -317,7 +328,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Hino',
     modelLine: '500 Series',
     station: 'Trạm Hà Đông',
-    status: 'ready',
+    status: 'READY',
     primaryDriverId: 'd3',
     secondaryDriverId: 'd1',
     parkAddress: 'Cổng chính',
@@ -332,7 +343,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Isuzu',
     modelLine: 'FVR',
     station: 'Trạm Hoàng Mai',
-    status: 'repair',
+    status: 'MAINTENANCE',
     primaryDriverId: 'd2',
     secondaryDriverId: 'd1',
     parkAddress: '',
@@ -347,7 +358,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Hino',
     modelLine: '500 Series',
     station: 'Trạm Hoàng Mai',
-    status: 'ready',
+    status: 'READY',
     primaryDriverId: 'd2',
     secondaryDriverId: 'd3',
     parkAddress: 'Sân trạm',
@@ -362,7 +373,7 @@ const SEED_VEHICLES: SeedVehicle[] = [
     brand: 'Dongfeng',
     modelLine: 'Captain',
     station: 'Trạm Hà Đông',
-    status: 'ready',
+    status: 'INACTIVE',
     primaryDriverId: 'd3',
     secondaryDriverId: 'd1',
     parkAddress: 'Bãi xe số 2',
@@ -560,6 +571,7 @@ function specsFor(item: SeedVehicle): VehicleSpecs {
   return {
     ...emptyVehicleSpecs(),
     year: '2021',
+    chassis: `KHUNG${item.plate.replace(/[^A-Z0-9]/gi, '')}`,
     ownership: 'Công ty',
     fuel: 'Diesel',
     seats: '3',
@@ -597,9 +609,13 @@ export function vehiclesForDriver(driverId: string): DriverVehicle[] {
   return vehicles.filter((item) => assignmentOf(item, driverId));
 }
 
+export function listDriverVehicles(): DriverVehicle[] {
+  return vehicles;
+}
+
 export function addDriverVehicle(input: {
-  driverId: string;
-  role: VehicleAssignment;
+  primaryDriverId: string;
+  secondaryDriverId: string | null;
   plate: string;
   type: string;
   brand: string;
@@ -617,9 +633,9 @@ export function addDriverVehicle(input: {
     brand: input.brand.trim(),
     modelLine: input.modelLine.trim(),
     station: input.station.trim(),
-    status: 'ready',
-    primaryDriverId: input.role === 'primary' ? input.driverId : '',
-    secondaryDriverId: input.role === 'secondary' ? input.driverId : null,
+    status: 'READY',
+    primaryDriverId: input.primaryDriverId,
+    secondaryDriverId: input.secondaryDriverId,
     parkAddress: input.parkAddress.trim(),
     odoKm: input.odoKm.replace(/\D/g, ''),
     toolNote: '',
@@ -642,9 +658,59 @@ export function addDriverVehicle(input: {
   return created;
 }
 
-export function plateTaken(plate: string): boolean {
+export function plateTaken(plate: string, exceptId?: string): boolean {
   const normalized = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  return vehicles.some((item) => item.plate.toUpperCase().replace(/[^A-Z0-9]/g, '') === normalized);
+  return vehicles.some(
+    (item) =>
+      item.id !== exceptId &&
+      item.plate.toUpperCase().replace(/[^A-Z0-9]/g, '') === normalized,
+  );
+}
+
+export function updateDriverVehicle(
+  id: string,
+  input: {
+    primaryDriverId: string;
+    secondaryDriverId: string | null;
+    plate: string;
+    type: string;
+    brand: string;
+    modelLine: string;
+    station: string;
+    odoKm: string;
+    photos: string[];
+    specs: VehicleSpecs;
+  },
+): DriverVehicle | undefined {
+  const current = getDriverVehicle(id);
+  if (!current) return undefined;
+  const removed = current.photos.filter((url) => !input.photos.includes(url));
+  removed.forEach((url) => {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+  });
+  const next: DriverVehicle = {
+    ...current,
+    plate: input.plate.trim().toUpperCase(),
+    type: input.type.trim(),
+    brand: input.brand.trim(),
+    modelLine: input.modelLine.trim(),
+    station: input.station.trim(),
+    primaryDriverId: input.primaryDriverId,
+    secondaryDriverId: input.secondaryDriverId,
+    odoKm: input.odoKm.replace(/\D/g, ''),
+    photos: [...input.photos],
+    specs: {
+      ...input.specs,
+      docs: input.specs.docs.map((doc) => ({ ...doc })),
+      tools: input.specs.tools.map((tool) => ({ ...tool })),
+      maintenanceHistory: input.specs.maintenanceHistory.map((item) => ({ ...item })),
+      rescueCapabilities: [...input.specs.rescueCapabilities],
+      acceptedVehicles: [...input.specs.acceptedVehicles],
+      midKm: input.odoKm ? formatOdo(input.odoKm) : input.specs.midKm,
+    },
+  };
+  vehicles = vehicles.map((item) => (item.id === id ? next : item));
+  return next;
 }
 
 export function getDriverVehicle(id: string): DriverVehicle | undefined {

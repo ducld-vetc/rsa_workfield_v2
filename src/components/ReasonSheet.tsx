@@ -11,6 +11,7 @@ const REJECT_REASONS = [
 interface ReasonSheetProps {
   open: boolean;
   title?: string;
+  reasons?: string[];
   onClose: () => void;
   onConfirm: (reason: string) => void;
 }
@@ -18,6 +19,7 @@ interface ReasonSheetProps {
 const ReasonSheet: React.FC<ReasonSheetProps> = ({
   open,
   title = 'Lý do từ chối',
+  reasons = REJECT_REASONS,
   onClose,
   onConfirm,
 }) => {
@@ -47,7 +49,7 @@ const ReasonSheet: React.FC<ReasonSheetProps> = ({
         <DlsSheetHeader title={title} onClose={onClose} />
         <div className="dls-sheet-body dls-sheet-body--form">
           <div className="dls-reason-list">
-            {REJECT_REASONS.map((r) => (
+            {reasons.map((r) => (
               <button
                 key={r}
                 type="button"

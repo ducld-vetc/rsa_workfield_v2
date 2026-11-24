@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, FileText, ImagePlus, X } from 'lucide-react';
+import { ChevronLeft, FileText, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   DlsBrandButton,
@@ -31,11 +31,9 @@ import {
   RepairRequest,
   repairRequestsOf,
   RUN_STATUS_LABEL,
-  updateVehicleSupplement,
   vehicleAlerts,
 } from '../data/driverVehicles';
 
-const MAX_PHOTOS = 4;
 const PHOTO_LABELS = ['Góc trước', 'Góc sau', 'Bên trái', 'Bên phải'];
 
 type DetailTab = 'info' | 'maint' | 'docs' | 'tools';
@@ -309,21 +307,14 @@ const VehicleDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentDriverId } = useApp();
-  const fileRef = React.useRef<HTMLInputElement>(null);
   const [vehicle, setVehicle] = React.useState<DriverVehicle | undefined>(() =>
     id ? getDriverVehicle(id) : undefined,
   );
-  const [parkAddress, setParkAddress] = React.useState(vehicle?.parkAddress ?? '');
-  const [odoKm, setOdoKm] = React.useState(vehicle?.odoKm ?? '');
-  const [toolNote, setToolNote] = React.useState(vehicle?.toolNote ?? '');
-  const [photos, setPhotos] = React.useState<string[]>(vehicle?.photos ?? []);
-  const [odoError, setOdoError] = React.useState('');
   const [notice, setNotice] = React.useState('');
   const [requests, setRequests] = React.useState<RepairRequest[]>(() =>
     id ? repairRequestsOf(id) : [],
   );
   const [repairOpen, setRepairOpen] = React.useState(false);
-  const [editOpen, setEditOpen] = React.useState(false);
   const [tab, setTab] = React.useState<DetailTab>('info');
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
   const [docPreview, setDocPreview] = React.useState<VehicleDoc | null>(null);
@@ -335,60 +326,10 @@ const VehicleDetailPage: React.FC = () => {
   const role = vehicle ? assignmentOf(vehicle, currentDriverId) : null;
 
   React.useEffect(() => {
-    const next = id ? getDriverVehicle(id) : undefined;
-    setVehicle(next);
-    setParkAddress(next?.parkAddress ?? '');
-    setOdoKm(next?.odoKm ?? '');
-    setToolNote(next?.toolNote ?? '');
-    setPhotos(next?.photos ?? []);
+    setVehicle(id ? getDriverVehicle(id) : undefined);
     setRequests(id ? repairRequestsOf(id) : []);
     setNotice('');
-    setOdoError('');
-    setEditOpen(false);
   }, [id]);
-
-  const openEdit = () => {
-    if (!vehicle) return;
-    setParkAddress(vehicle.parkAddress);
-    setOdoKm(vehicle.odoKm);
-    setToolNote(vehicle.toolNote);
-    setPhotos([...vehicle.photos]);
-    setOdoError('');
-    setEditOpen(true);
-  };
-
-  const addPhotos = (files: FileList | null) => {
-    if (!files) return;
-    const room = MAX_PHOTOS - photos.length;
-    const next = [...photos];
-    Array.from(files)
-      .slice(0, room)
-      .forEach((file) => {
-        if (!file.type.startsWith('image/')) return;
-        next.push(URL.createObjectURL(file));
-      });
-    setPhotos(next);
-  };
-
-  const saveSupplement = () => {
-    if (!vehicle) return;
-    const digits = odoKm.replace(/\D/g, '');
-    if (odoKm.trim() && !digits) {
-      setOdoError('ODO chỉ gồm chữ số.');
-      return;
-    }
-    setOdoError('');
-    const saved = updateVehicleSupplement(vehicle.id, {
-      parkAddress: parkAddress.trim(),
-      odoKm: digits,
-      toolNote: toolNote.trim(),
-      photos,
-    });
-    if (saved) setVehicle(saved);
-    setOdoKm(digits);
-    setEditOpen(false);
-    setNotice('Đã lưu thông tin xe.');
-  };
 
   const submitRepair = () => {
     if (!vehicle || !symptom.trim()) return;
@@ -454,7 +395,11 @@ const VehicleDetailPage: React.FC = () => {
                 </div>
               </div>
               <div className="drv-detail-header-actions">
-                <button type="button" className="drv-detail-edit" onClick={openEdit}>
+                <button
+                  type="button"
+                  className="drv-detail-edit"
+                  onClick={() => navigate(`/settings/vehicles/${vehicle.id}/edit`)}
+                >
                   Sửa
                 </button>
               </div>
@@ -503,91 +448,6 @@ const VehicleDetailPage: React.FC = () => {
           </>
         )}
       </div>
-
-      {editOpen && vehicle && (
-        <div
-          className="dls-sheet-overlay"
-          role="dialog"
-          aria-modal
-          aria-label="Sửa thông tin xe"
-          onClick={() => setEditOpen(false)}
-        >
-          <div className="dls-sheet" onClick={(event) => event.stopPropagation()}>
-            <DlsSheetHeader title="Sửa thông tin xe" onClose={() => setEditOpen(false)} />
-            <div className="dls-sheet-body dls-sheet-body--form">
-              <DlsTextField
-                label="Vị trí đỗ"
-                value={parkAddress}
-                onChange={setParkAddress}
-                placeholder="Nhập vị trí đỗ xe"
-              />
-              <DlsTextField
-                label="ODO hiện tại (km)"
-                value={odoKm}
-                onChange={(value) => {
-                  setOdoError('');
-                  setOdoKm(value.replace(/\D/g, ''));
-                }}
-                placeholder="Nhập số công tơ mét"
-                error={odoError}
-              />
-              <div className="dls-field">
-                <DlsLabel>Tình trạng công cụ</DlsLabel>
-                <textarea
-                  className="dls-textarea drv-field-note"
-                  value={toolNote}
-                  onChange={(event) => setToolNote(event.target.value)}
-                  placeholder="Ghi công cụ hỏng, thiếu hoặc cần bổ sung"
-                />
-              </div>
-              <div className="dls-field">
-                <DlsLabel>Ảnh xe</DlsLabel>
-                <div className="drv-vehicle-photos">
-                  {photos.map((url) => (
-                    <div key={url} className="drv-vehicle-photo">
-                      <img src={url} alt="Ảnh xe đã thêm" />
-                      <button
-                        type="button"
-                        aria-label="Xoá ảnh"
-                        onClick={() => setPhotos((prev) => prev.filter((item) => item !== url))}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  {photos.length < MAX_PHOTOS && (
-                    <button
-                      type="button"
-                      className="drv-vehicle-photo drv-vehicle-photo--add"
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <ImagePlus size={18} />
-                      Thêm ảnh
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  hidden
-                  onChange={(event) => {
-                    addPhotos(event.target.files);
-                    event.target.value = '';
-                  }}
-                />
-                <p className="drv-vehicle-photo-hint">Tối đa {MAX_PHOTOS} ảnh.</p>
-              </div>
-            </div>
-            <div className="dls-sheet-footer">
-              <DlsNeutralButton onClick={() => setEditOpen(false)}>Hủy</DlsNeutralButton>
-              <DlsBrandButton onClick={saveSupplement}>Lưu</DlsBrandButton>
-            </div>
-            <DlsHomeIndicator />
-          </div>
-        </div>
-      )}
 
       {repairOpen && vehicle && (
         <div

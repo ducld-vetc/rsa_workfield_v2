@@ -31,7 +31,7 @@ const NotificationsPage: React.FC = () => {
                   key={n.id}
                   type="button"
                   className={`grab-notif-row${n.read ? '' : ' grab-notif-row--unread'}`}
-                  onClick={() => navigate(`/notifications/${n.id}`)}
+                  onClick={() => navigate(n.advanceId ? `/advances/${n.advanceId}` : `/notifications/${n.id}`)}
                 >
                   <div className="grab-notif-row__main">
                     <div className="grab-notif-row__top">

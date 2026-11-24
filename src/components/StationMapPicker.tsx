@@ -142,55 +142,59 @@ const StationMapPicker: React.FC<StationMapPickerProps> = ({
     }
   };
 
-  return (
-    <div className={`grab-register-map ${className}`.trim()}>
-      <MapContainer
-        center={toLatLng(center)}
-        zoom={14}
-        zoomControl={false}
-        attributionControl={false}
-        className="grab-register-map__leaflet"
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <InvalidateSize />
-        <FlyTo point={flyPoint} token={flyToken} />
-        <MapClickHandler onPick={onChange} />
-        {value && !searchedHere && <Recenter point={value} />}
-        {value && <Marker position={toLatLng(value)} icon={stationIcon} />}
-      </MapContainer>
-      {searchable && (
-        <div className="grab-register-map__search">
-          <DlsSearchField
-            value={query}
-            onChange={setQuery}
-            onSubmit={() => {
-              void runSearch();
-            }}
-            placeholder={searching ? 'Đang tìm...' : 'Địa chỉ hoặc tọa độ'}
-            ariaLabel="Tìm vị trí"
-          />
-          {hits.length > 0 && (
-            <div className="grab-register-map__results" role="listbox" aria-label="Kết quả tìm vị trí">
-              {hits.map((hit) => (
-                <button
-                  key={`${hit.point.lat}-${hit.point.lng}-${hit.label}`}
-                  type="button"
-                  className="grab-register-map__result"
-                  role="option"
-                  onClick={() => focusPoint(hit.point)}
-                >
-                  {hit.label}
-                </button>
-              ))}
-            </div>
-          )}
-          {searchNote && <p className="grab-register-map__note">{searchNote}</p>}
+  const searchBox = searchable ? (
+    <div className="grab-register-map__search grab-register-map__search--outside">
+      <DlsSearchField
+        value={query}
+        onChange={setQuery}
+        onSubmit={() => {
+          void runSearch();
+        }}
+        placeholder={searching ? 'Đang tìm...' : 'Địa chỉ hoặc tọa độ'}
+        ariaLabel="Tìm vị trí"
+      />
+      {hits.length > 0 && (
+        <div className="grab-register-map__results" role="listbox" aria-label="Kết quả tìm vị trí">
+          {hits.map((hit) => (
+            <button
+              key={`${hit.point.lat}-${hit.point.lng}-${hit.label}`}
+              type="button"
+              className="grab-register-map__result"
+              role="option"
+              onClick={() => focusPoint(hit.point)}
+            >
+              {hit.label}
+            </button>
+          ))}
         </div>
       )}
-      <div className="grab-register-map__hint" aria-hidden>
-        {hint}
-      </div>
+      {searchNote && <p className="grab-register-map__note">{searchNote}</p>}
     </div>
+  ) : null;
+
+  return (
+    <>
+      {searchBox}
+      <div className={`grab-register-map ${className}`.trim()}>
+        <MapContainer
+          center={toLatLng(center)}
+          zoom={14}
+          zoomControl={false}
+          attributionControl={false}
+          className="grab-register-map__leaflet"
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <InvalidateSize />
+          <FlyTo point={flyPoint} token={flyToken} />
+          <MapClickHandler onPick={onChange} />
+          {value && !searchedHere && <Recenter point={value} />}
+          {value && <Marker position={toLatLng(value)} icon={stationIcon} />}
+        </MapContainer>
+        <div className="grab-register-map__hint" aria-hidden>
+          {hint}
+        </div>
+      </div>
+    </>
   );
 };
 

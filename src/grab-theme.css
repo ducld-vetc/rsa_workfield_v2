@@ -2222,8 +2222,13 @@
   min-width: 0;
 }
 
-.order-detail-meta__item--wide {
+.order-detail-meta__item--wide,
+.order-detail-meta > .order-detail-services__title {
   grid-column: 1 / -1;
+}
+
+.order-detail-meta > .order-detail-services__title {
+  margin-bottom: 4px;
 }
 
 .order-detail-meta__label {
@@ -2288,6 +2293,12 @@ a.order-detail-meta__value {
   display: flex;
   flex-direction: column;
   padding-bottom: 0;
+}
+
+.order-detail-sheet > .grab-page-header {
+  flex-shrink: 0;
+  margin: calc(-1 * var(--dls-space-16)) calc(-1 * var(--dls-content-padding)) var(--dls-space-12);
+  border-radius: var(--dls-radius-20) var(--dls-radius-20) 0 0;
 }
 
 .order-detail-sheet__scroll {
@@ -5431,6 +5442,15 @@ a.order-detail-meta__value {
   z-index: 3;
 }
 
+.grab-register-map__search--outside {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  margin-bottom: 8px;
+}
+
 .grab-register-map__results {
   margin-top: 8px;
   max-height: 168px;
@@ -5905,7 +5925,9 @@ a.order-detail-meta__value {
   display: flex;
   align-items: center;
   gap: var(--dls-space-8);
+  min-width: 0;
   padding: 0 var(--dls-space-16) var(--dls-space-12);
+  overflow: hidden;
 }
 
 .manage-smart-filter__chips {
@@ -5914,7 +5936,17 @@ a.order-detail-meta__value {
   min-width: 0;
   gap: var(--dls-space-8);
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
   scrollbar-width: none;
+  cursor: grab;
+}
+
+.manage-smart-filter__chips > .dls-chip {
+  flex: 0 0 auto;
+  max-width: none;
 }
 
 .manage-smart-filter__chips::-webkit-scrollbar {
@@ -5933,6 +5965,73 @@ a.order-detail-meta__value {
   align-items: center;
   gap: var(--dls-space-8);
   flex-shrink: 0;
+}
+
+.vehicle-lookup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--dls-brand);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--dls-brand);
+  cursor: pointer;
+}
+
+.vehicle-lookup-btn--on {
+  background: var(--dls-brand);
+  color: var(--dls-on-brand);
+}
+
+.vehicle-filter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vehicle-lookup-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.vehicle-lookup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vehicle-lookup-field input {
+  width: 100%;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid #d7d9de;
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.vehicle-lookup-error {
+  margin: 6px 0 0;
+  color: #b42318;
+  font-size: 12px;
+}
+
+.vehicle-lookup-center {
+  margin: 8px 0;
+  color: #3d4450;
+  font-size: 13px;
+}
+
+.vehicle-lookup-apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .wf-create-btn {
@@ -6603,14 +6702,29 @@ a.order-detail-meta__value {
   font-weight: 600;
 }
 
-.drv-vehicle-status--ready {
+.drv-vehicle-status--ready,
+.drv-vehicle-status--READY {
   background: rgba(37, 165, 94, 0.12);
   color: var(--dls-brand-dark);
 }
 
-.drv-vehicle-status--repair {
+.drv-vehicle-status--WORKING {
+  background: rgba(21, 101, 192, 0.12);
+  color: #1565c0;
+}
+
+.drv-vehicle-status--repair,
+.drv-vehicle-status--paused,
+.drv-vehicle-status--MAINTENANCE,
+.drv-vehicle-status--STOPPED {
   background: rgba(159, 118, 0, 0.12);
   color: #8a6f12;
+}
+
+.drv-vehicle-status--inactive,
+.drv-vehicle-status--INACTIVE {
+  background: #fdecec;
+  color: #b42318;
 }
 
 .drv-vehicle-status--wait {
@@ -6618,8 +6732,207 @@ a.order-detail-meta__value {
   color: #8a6f12;
 }
 
-.drv-vehicle-status--bad {
+.drv-vehicle-status--bad,
+.drv-vehicle-status--rejected {
   background: #fdecec;
+  color: #b42318;
+}
+
+.drv-vehicle-status--pending {
+  background: rgba(159, 118, 0, 0.12);
+  color: #8a6f12;
+}
+
+.drv-vehicle-status--confirmed {
+  background: rgba(37, 165, 94, 0.12);
+  color: var(--dls-brand-dark);
+}
+
+.drv-advance-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.drv-advance-copy-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #1565c0;
+}
+
+.drv-advance-note {
+  margin: 0;
+  padding: 0 12px 12px;
+  font-size: var(--dls-text-sm);
+  line-height: var(--dls-lh-sm);
+  color: var(--dls-primary);
+}
+
+.drv-advance-emph {
+  color: var(--dls-brand-dark);
+  font-weight: 800;
+}
+
+.order-detail-cost__remain .drv-advance-emph {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.drv-advance-row-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--dls-secondary);
+}
+
+.drv-advance-row-line svg {
+  flex-shrink: 0;
+  color: var(--dls-secondary);
+}
+
+.drv-advance-row-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.drv-advance-row-amount {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--dls-brand-dark);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: right;
+}
+
+.drv-advance-files {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.drv-advance-files--one {
+  grid-template-columns: 148px;
+}
+
+.drv-advance-files--pair {
+  grid-template-columns: 1fr 1fr;
+}
+
+.drv-advance-file {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.drv-advance-file img {
+  width: 100%;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--dls-outline-subtle, #eceef2);
+}
+
+.drv-advance-file span {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--dls-secondary);
+}
+
+.drv-advance-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #111;
+}
+
+button.drv-advance-tap {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.order-detail-cost__row.drv-advance-tap:active,
+button.order-detail-cost__remain.drv-advance-tap:active {
+  background: rgba(37, 165, 94, 0.08);
+}
+
+.drv-advance-copy {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 68%;
+  text-align: right;
+}
+
+.order-detail-cost__remain .drv-advance-copy {
+  max-width: none;
+}
+
+.drv-advance-copy span {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.drv-advance-copy button {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: #1565c0;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.drv-advance-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px dashed var(--dls-outline-variant, #d0d5dd);
+  border-radius: var(--dls-radius-12);
+  background: var(--dls-theme);
+  color: var(--dls-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.drv-advance-proof {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  margin-top: 8px;
+  object-fit: cover;
+  border-radius: var(--dls-radius-12);
+  border: 1px solid var(--dls-outline-subtle, #eceef2);
+}
+
+.drv-advance-error {
+  margin: 12px 16px 0;
+  font-size: 13px;
+  font-weight: 600;
   color: #b42318;
 }
 
@@ -7532,6 +7845,12 @@ a.order-detail-meta__value {
 .drv-field-note {
   margin-top: 0;
   min-height: 88px;
+}
+
+.drv-photo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .drv-vehicle-photos {

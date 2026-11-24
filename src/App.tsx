@@ -5,10 +5,14 @@ import DeviceChrome from './components/DeviceChrome';
 import { RoleGuard, RoleHomeRedirect } from './components/RoleGuard';
 import { RoleRouteSync } from './components/RoleRouteSync';
 import FilterSheet from './components/FilterSheet';
+import AdvanceArrivalNotice from './components/AdvanceArrivalNotice';
 import ConnectionNotice from './components/ConnectionNotice';
 import { LocationPermissionGate } from './components/LocationModal';
 import { AppProvider, useApp } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import AdvanceDetailPage from './pages/AdvanceDetailPage';
+import AdvanceProofPage from './pages/AdvanceProofPage';
+import AdvanceListPage from './pages/AdvanceListPage';
 import AccountLockedPage from './pages/AccountLockedPage';
 import ActivityPage from './pages/ActivityPage';
 import CreateRescueOrderPage from './pages/CreateRescueOrderPage';
@@ -184,6 +188,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/jobs/:id" element={<ProtectedRoute><JobNavigationPage /></ProtectedRoute>} />
         <Route path="/jobs/:id/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
         <Route path="/jobs/:id/camera" element={<ProtectedRoute><CameraPage /></ProtectedRoute>} />
+        <Route path="/advances" element={<ProtectedRoute><AdvanceListPage /></ProtectedRoute>} />
+        <Route path="/advances/:id/proof" element={<ProtectedRoute><AdvanceProofPage /></ProtectedRoute>} />
+        <Route path="/advances/:id" element={<ProtectedRoute><AdvanceDetailPage /></ProtectedRoute>} />
         <Route
           path="/notifications"
           element={
@@ -214,6 +221,14 @@ const AppRoutes: React.FC = () => {
         />
         <Route
           path="/settings/vehicles/new"
+          element={
+            <ProtectedRoute>
+              <VehicleFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/vehicles/:id/edit"
           element={
             <ProtectedRoute>
               <VehicleFormPage />
@@ -282,6 +297,7 @@ const App: React.FC = () => (
             <DeviceChrome />
             <div className="dm-device__app">
               <AppRoutes />
+              <AdvanceArrivalNotice />
               <ConnectionNotice />
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ImagePlus, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   DlsBrandButton,
   DlsHomeIndicator,
@@ -15,17 +15,20 @@ import {
   addDriverVehicle,
   emptyVehicleSpecs,
   FUEL_OPTIONS,
+  getDriverVehicle,
   OWNERSHIP_OPTIONS,
   plateTaken,
+  updateDriverVehicle,
   RESCUE_CAPABILITY_OPTIONS,
   VEHICLE_BRAND_OPTIONS,
   VEHICLE_STATION_OPTIONS,
   VEHICLE_TYPE_OPTIONS,
   VehicleSpecs,
 } from '../data/driverVehicles';
+import { MOCK_QUOTE_DRIVERS } from '../data/mockQuoteResources';
 
-const ROLE_OPTIONS = ['Xe chính', 'Xe phụ'];
 const MAX_PHOTOS = 4;
+const DRIVER_OPTIONS = MOCK_QUOTE_DRIVERS.map((driver) => driver.name);
 
 const ChoiceGroup: React.FC<{
   label: string;
@@ -56,27 +59,40 @@ const ChoiceGroup: React.FC<{
   </div>
 );
 
+const withCurrent = (options: readonly string[], current: string) =>
+  current && !options.includes(current) ? [current, ...options] : [...options];
+
 const VehicleFormPage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id?: string }>();
   const { currentDriverId } = useApp();
+  const existing = id ? getDriverVehicle(id) : undefined;
+  const editing = Boolean(id);
   const fileRef = React.useRef<HTMLInputElement>(null);
-  const [plate, setPlate] = React.useState('');
-  const [role, setRole] = React.useState('Xe chính');
-  const [type, setType] = React.useState('');
-  const [brand, setBrand] = React.useState('');
-  const [modelLine, setModelLine] = React.useState('');
-  const [station, setStation] = React.useState('Trạm Hoàng Mai');
-  const [year, setYear] = React.useState('');
-  const [chassis, setChassis] = React.useState('');
-  const [engineNo, setEngineNo] = React.useState('');
-  const [ownership, setOwnership] = React.useState('Công ty');
-  const [fuel, setFuel] = React.useState('Diesel');
-  const [registrationDate, setRegistrationDate] = React.useState('');
-  const [caps, setCaps] = React.useState<string[]>([]);
-  const [accepted, setAccepted] = React.useState<string[]>([]);
-  const [cycleKm, setCycleKm] = React.useState('');
-  const [odoKm, setOdoKm] = React.useState('');
-  const [photos, setPhotos] = React.useState<string[]>([]);
+  const [plate, setPlate] = React.useState(existing?.plate ?? '');
+  const [primaryDriver, setPrimaryDriver] = React.useState(
+    () =>
+      MOCK_QUOTE_DRIVERS.find((driver) => driver.id === (existing?.primaryDriverId ?? currentDriverId))?.name ??
+      '',
+  );
+  const [secondaryDriver, setSecondaryDriver] = React.useState(
+    () => MOCK_QUOTE_DRIVERS.find((driver) => driver.id === existing?.secondaryDriverId)?.name ?? '',
+  );
+  const [type, setType] = React.useState(existing?.type ?? '');
+  const [brand, setBrand] = React.useState(existing?.brand ?? '');
+  const [modelLine, setModelLine] = React.useState(existing?.modelLine ?? '');
+  const [station, setStation] = React.useState(existing?.station ?? 'Trạm Hoàng Mai');
+  const [year, setYear] = React.useState(existing?.specs.year ?? '');
+  const [chassis, setChassis] = React.useState(existing?.specs.chassis ?? '');
+  const [engineNo, setEngineNo] = React.useState(existing?.specs.engineNo ?? '');
+  const [ownership, setOwnership] = React.useState(existing?.specs.ownership || 'Công ty');
+  const [fuel, setFuel] = React.useState(existing?.specs.fuel || 'Diesel');
+  const [registrationDate, setRegistrationDate] = React.useState(existing?.specs.registrationDate ?? '');
+  const [caps, setCaps] = React.useState<string[]>(existing?.specs.rescueCapabilities ?? []);
+  const [accepted, setAccepted] = React.useState<string[]>(existing?.specs.acceptedVehicles ?? []);
+  const [cycleKm, setCycleKm] = React.useState(existing?.specs.maintenanceCycleKm ?? '');
+  const [odoKm, setOdoKm] = React.useState(existing?.odoKm ?? '');
+  const [photos, setPhotos] = React.useState<string[]>(existing?.photos ?? []);
   const [error, setError] = React.useState('');
 
   const digits = (value: string) => value.replace(/\D/g, '');
@@ -100,12 +116,26 @@ const VehicleFormPage: React.FC = () => {
       setError('Chọn loại xe.');
       return;
     }
-    if (plateTaken(plate)) {
+    const primary = MOCK_QUOTE_DRIVERS.find((driver) => driver.name === primaryDriver);
+    if (!primary) {
+      setError('Chọn tài xế chính.');
+      return;
+    }
+    const secondary = MOCK_QUOTE_DRIVERS.find((driver) => driver.name === secondaryDriver);
+    if (secondary && secondary.id === primary.id) {
+      setError('Tài xế phụ phải khác tài xế chính.');
+      return;
+    }
+    if (!station) {
+      setError('Chọn trạm.');
+      return;
+    }
+    if (plateTaken(plate, existing?.id)) {
       setError('Biển số này đã có trong danh sách.');
       return;
     }
     const specs: VehicleSpecs = {
-      ...emptyVehicleSpecs(),
+      ...(existing?.specs ?? emptyVehicleSpecs()),
       year: digits(year),
       chassis: chassis.trim(),
       engineNo: engineNo.trim(),
@@ -115,24 +145,58 @@ const VehicleFormPage: React.FC = () => {
       rescueCapabilities: caps,
       acceptedVehicles: accepted,
       maintenanceCycleKm: digits(cycleKm),
-      maintenanceStatus: '',
-      docs: [],
+      docs: existing?.specs.docs ?? [],
+      tools: existing?.specs.tools ?? [],
+      maintenanceHistory: existing?.specs.maintenanceHistory ?? [],
     };
-    const created = addDriverVehicle({
-      driverId: currentDriverId,
-      role: role === 'Xe phụ' ? 'secondary' : 'primary',
+    const payload = {
+      primaryDriverId: primary.id,
+      secondaryDriverId: secondary?.id ?? null,
       plate,
       type,
       brand,
       modelLine,
       station,
-      parkAddress: '',
       odoKm,
       photos,
       specs,
-    });
+    };
+    if (existing) {
+      const saved = updateDriverVehicle(existing.id, payload);
+      if (!saved) {
+        setError('Không lưu được phương tiện.');
+        return;
+      }
+      navigate(`/settings/vehicles/${saved.id}`, { replace: true });
+      return;
+    }
+    const created = addDriverVehicle({ ...payload, parkAddress: '' });
     navigate(`/settings/vehicles/${created.id}`, { replace: true });
   };
+
+  if (editing && !existing) {
+    return (
+      <MainShell hideTab>
+        <div className="drv-vehicle-page">
+          <header className="grab-page-header">
+            <div className="drv-vehicle-header__main">
+              <button
+                type="button"
+                className="drv-vehicle-back"
+                onClick={() => navigate('/settings/vehicles')}
+                aria-label="Quay lại"
+              >
+                <ChevronLeft size={24} strokeWidth={2} />
+              </button>
+              <h1>Sửa phương tiện</h1>
+            </div>
+          </header>
+          <p className="drv-vehicle-group__empty drv-vehicle-empty">Không tìm thấy phương tiện.</p>
+        </div>
+        <DlsHomeIndicator />
+      </MainShell>
+    );
+  }
 
   return (
     <MainShell hideTab>
@@ -142,13 +206,13 @@ const VehicleFormPage: React.FC = () => {
             <button
               type="button"
               className="drv-vehicle-back"
-              onClick={() => navigate('/settings/vehicles')}
+              onClick={() => navigate(existing ? `/settings/vehicles/${existing.id}` : '/settings/vehicles')}
               aria-label="Quay lại"
             >
               <ChevronLeft size={24} strokeWidth={2} />
             </button>
             <div>
-              <h1>Thêm phương tiện</h1>
+              <h1>{existing ? 'Sửa phương tiện' : 'Thêm phương tiện'}</h1>
               <p className="drv-detail-kicker">Hồ sơ theo thông tin xe trên CMS</p>
             </div>
           </div>
@@ -176,7 +240,7 @@ const VehicleFormPage: React.FC = () => {
             <DlsSelectField
               label="Loại xe"
               value={type}
-              options={VEHICLE_TYPE_OPTIONS}
+              options={withCurrent(VEHICLE_TYPE_OPTIONS, type)}
               onChange={setType}
               sheetTitle="Chọn loại xe"
               placeholder="Chọn loại xe"
@@ -185,7 +249,7 @@ const VehicleFormPage: React.FC = () => {
             <DlsSelectField
               label="Hãng xe"
               value={brand}
-              options={VEHICLE_BRAND_OPTIONS}
+              options={withCurrent(VEHICLE_BRAND_OPTIONS, brand)}
               onChange={setBrand}
               sheetTitle="Chọn hãng xe"
               placeholder="Chọn hãng xe"
@@ -198,20 +262,35 @@ const VehicleFormPage: React.FC = () => {
             <DlsSelectField label="Nhiên liệu" value={fuel} options={FUEL_OPTIONS} onChange={setFuel} sheetTitle="Nhiên liệu" />
             <DlsTextField label="Ngày đăng ký" value={registrationDate} onChange={setRegistrationDate} placeholder="VD: 15/03/2022" />
             <DlsSelectField
-              label="Vai trò của bạn"
-              value={role}
-              options={ROLE_OPTIONS}
-              onChange={setRole}
-              sheetTitle="Chọn vai trò"
+              label="Trạm"
+              value={station}
+              options={withCurrent(VEHICLE_STATION_OPTIONS, station)}
+              onChange={setStation}
+              sheetTitle="Chọn trạm"
+              searchable
+              searchPlaceholder="Tìm trạm"
               required
             />
             <DlsSelectField
-              label="Trạm"
-              value={station}
-              options={VEHICLE_STATION_OPTIONS}
-              onChange={setStation}
-              sheetTitle="Chọn trạm"
+              label="Tài xế chính"
+              value={primaryDriver}
+              options={DRIVER_OPTIONS}
+              onChange={setPrimaryDriver}
+              sheetTitle="Chọn tài xế chính"
+              placeholder="Chọn tài xế chính"
+              searchable
+              searchPlaceholder="Tìm tài xế"
               required
+            />
+            <DlsSelectField
+              label="Tài xế phụ"
+              value={secondaryDriver}
+              options={DRIVER_OPTIONS.filter((name) => name !== primaryDriver)}
+              onChange={setSecondaryDriver}
+              sheetTitle="Chọn tài xế phụ"
+              placeholder="Chọn tài xế phụ"
+              searchable
+              searchPlaceholder="Tìm tài xế"
             />
           </section>
 
@@ -229,7 +308,7 @@ const VehicleFormPage: React.FC = () => {
 
           <section className="drv-form-section">
             <h2>Hình ảnh</h2>
-            <div className="dls-field">
+            <div className="dls-field drv-photo-block">
               <div className="drv-vehicle-photos">
                 {photos.map((url) => (
                   <div key={url} className="drv-vehicle-photo">

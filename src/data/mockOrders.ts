@@ -397,4 +397,12 @@ export const MOCK_NOTIFICATIONS: NotificationItem[] = [
     time: 'Hôm qua',
     read: true,
   },
+  {
+    id: 'n3',
+    title: 'Yêu cầu ứng tiền mới',
+    body: 'RS12602020002 · Hoàn cho khách 200.000 đ. Nguyễn Thị Lan · OSA vừa gửi yêu cầu.',
+    time: '09:15',
+    read: false,
+    advanceId: 'adv-pending',
+  },
 ];

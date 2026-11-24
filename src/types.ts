@@ -447,6 +447,7 @@ export interface NotificationItem {
   body: string;
   time: string;
   read: boolean;
+  advanceId?: string;
 }
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
